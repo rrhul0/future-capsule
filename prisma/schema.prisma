@@ -14,10 +14,10 @@ model User {
     emailVerified DateTime?
     image         String?
     accounts      Account[]
-    sessions      Session[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    Capsule   Capsule[]
 
     @@map("users")
 }
@@ -44,14 +44,16 @@ model Account {
     @@map("accounts")
 }
 
-model Session {
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Capsule {
+    id              String   @id @default(cuid())
+    content         String
+    unlocked        Boolean  @default(false)
+    scheduledTo     DateTime
+    recipientEmails String[] //if recepient email is not varified for same user make sure the scheduled delay is more then 1 month to ensure service is not used wrongfully
+    author          User     @relation(fields: [authorId], references: [id])
+    authorId        String
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@map("sessions")
+    @@map("capsules")
 }
