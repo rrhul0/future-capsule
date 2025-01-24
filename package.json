@@ -10,7 +10,7 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
-    "build:cron": "rm -r cron-dist && tsc cron/index.ts --outDir cron-dist",
+    "build:cron": "tsc cron/index.ts --outDir cron-dist",
     "start:cron": "node cron-dist/cron/index.js"
   },
   "dependencies": {
