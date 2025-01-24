@@ -3,11 +3,9 @@ import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 
 // Create a Redis connection
-const connection = new Redis(
-  {
-      maxRetriesPerRequest: null, // Disable retries in ioredis
-  }
-);
+const connection = new Redis(process.env.REDIS_DB!,{
+  maxRetriesPerRequest: null
+});
 
 // Setup BullMQ queue
 const emailQueue = new Queue('emailQueue',{connection});

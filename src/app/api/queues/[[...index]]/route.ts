@@ -12,11 +12,9 @@ import Redis from 'ioredis';
 const app = new Hono();
 
 // Create a Redis connection
-const connection = new Redis(
-  {
-      maxRetriesPerRequest: null, // Disable retries in ioredis
-  }
-);
+const connection = new Redis(process.env.REDIS_DB!,{
+  maxRetriesPerRequest: null
+});
 
 // Create the Express adapter
 const serverAdapter = new HonoAdapter(serveStatic);

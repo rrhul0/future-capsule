@@ -3,11 +3,9 @@ import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 
 // Create a Redis connection
-const connection = new Redis(
-    {
-        maxRetriesPerRequest: null, // Disable retries in ioredis
-    }
-);
+const connection = new Redis(process.env.REDIS_DB!,{
+  maxRetriesPerRequest: null
+});
 
 // Setup BullMQ worker
 const worker = new Worker('emailQueue', async (job) => {
