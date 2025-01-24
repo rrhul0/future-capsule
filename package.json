@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
     "build": "next build",
-    "start": "next start",
+    "start": "prisma migrate deploy && next start",
     "postinstall": "prisma generate",
     "lint": "next lint"
   },
