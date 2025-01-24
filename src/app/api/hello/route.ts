@@ -1,3 +1,3 @@
 export const GET = () => {
-  return Response.json({ name: 'Hello world Preview' })
+  return Response.json({ name: 'Hello world' })
 }
