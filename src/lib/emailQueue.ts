@@ -1,5 +1,5 @@
-import { redisConnection } from '@/utils/redis';
-import { prisma } from '@prisma-client';
+import { redisConnection } from '../utils/redis';
+import { prisma } from '../../prisma/prisma';
 import { Queue } from 'bullmq';
 
 // Setup BullMQ queue
