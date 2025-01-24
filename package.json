@@ -10,8 +10,8 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
-    "build:cron": "tsc cron/index.ts --outDir cron-dist",
-    "start:cron": "node cron-dist/index.js"
+    "build:cron": "rm -r cron-dist && tsc cron/index.ts --outDir cron-dist",
+    "start:cron": "node cron-dist/cron/index.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
