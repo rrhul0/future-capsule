@@ -7,8 +7,8 @@ const emailQueue = new Queue('emailQueue',{connection:redisConnection});
 
 export async function fetchAndScheduleJobs({days}: {days: number}) {
   const now = new Date();
-  const daysLater = new Date(now.getTime() + days*24 * 60 * 60 * 1000);
-
+  const currentHour = new Date(now.setMinutes(0, 0, 0));
+  const daysLater = new Date(currentHour.getTime() + days*24 * 60 * 60 * 1000);
   // Fetch schedules for the next 1 days
   const capsulesToQueue = await prisma.capsule.findMany({
     where:{
