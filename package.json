@@ -3,14 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "next lint"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
+    "@bull-board/hono": "^6.7.1",
+    "@hono/node-server": "^1.13.7",
     "@prisma/client": "^6.2.1",
+    "bullmq": "^5.35.1",
     "next": "15.1.6",
     "next-auth": "^5.0.0-beta.25",
     "nodemailer": "^6.10.0",
@@ -28,6 +32,8 @@
     "postcss": "^8",
     "prisma": "^6.2.1",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

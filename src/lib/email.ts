@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async ({ to, subject, htmlContent }:{to:string,subject:string,htmlContent:string}) => {
+const sendEmail = async ({ to, subject='Your Future Capsule', htmlContent }:{to:string,subject?:string,htmlContent:string}) => {
   const emailData:SendMailOptions = {
     subject: subject,
     html: htmlContent,

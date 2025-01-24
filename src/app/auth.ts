@@ -3,7 +3,7 @@ import GithubProvider from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
 import Gitlab from "next-auth/providers/gitlab"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@app/prisma"
+import { prisma } from "@prisma-client"
 
 export const {handlers,auth,signIn,signOut} = NextAuth({
     providers: [
