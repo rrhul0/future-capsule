@@ -1,4 +1,4 @@
-import sendEmail from '@/lib/email';
+import sendEmail from '../src/lib/email';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 

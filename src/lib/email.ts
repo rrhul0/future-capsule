@@ -1,6 +1,6 @@
-import nodemailer, { SendMailOptions } from 'nodemailer'
+import { SendMailOptions, createTransport } from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
   secure: false, // true for 465, false for other ports
