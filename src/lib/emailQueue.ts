@@ -1,14 +1,9 @@
+import { redisConnection } from '@/utils/redis';
 import { prisma } from '@prisma-client';
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
-
-// Create a Redis connection
-const connection = new Redis(process.env.REDIS_DB!,{
-  maxRetriesPerRequest: null
-});
 
 // Setup BullMQ queue
-const emailQueue = new Queue('emailQueue',{connection});
+const emailQueue = new Queue('emailQueue',{connection:redisConnection});
 
 export async function fetchAndScheduleJobs({days}: {days: number}) {
   const now = new Date();

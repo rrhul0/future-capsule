@@ -7,19 +7,14 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { auth } from "@/app/auth";
 import { redirect } from "next/navigation";
 import { Queue } from "bullmq";
-import Redis from 'ioredis';
+import { redisConnection } from "@/utils/redis";
 
 const app = new Hono();
-
-// Create a Redis connection
-const connection = new Redis(process.env.REDIS_DB!,{
-  maxRetriesPerRequest: null
-});
 
 // Create the Express adapter
 const serverAdapter = new HonoAdapter(serveStatic);
 
-const emailQueue = new Queue('emailQueue',{connection})
+const emailQueue = new Queue('emailQueue',{connection:redisConnection})
 
 // Create Bull Board with your queues
 createBullBoard({

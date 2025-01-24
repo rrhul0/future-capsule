@@ -1,11 +1,7 @@
 import sendEmail from '../src/lib/email';
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+import {redisConnection} from '../src/utils/redis';
 
-// Create a Redis connection
-const connection = new Redis(process.env.REDIS_DB!,{
-  maxRetriesPerRequest: null
-});
 
 // Setup BullMQ worker
 const worker = new Worker('emailQueue', async (job) => {
@@ -15,7 +11,7 @@ const worker = new Worker('emailQueue', async (job) => {
   await sendEmail({to:email, htmlContent:content});
 
   console.log(`Email sent to ${email}`);
-},{connection});
+},{connection:redisConnection});
 
 // Listen for job completion
 worker.on('completed', (job, result) => {
