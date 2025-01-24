@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
-    "build": "next build",
-    "start": "prisma migrate deploy && next start",
+    "build": "prisma migrate deploy && next build",
+    "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint"
   },
