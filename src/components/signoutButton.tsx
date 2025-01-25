@@ -1,5 +1,5 @@
 'use client'
-import { signout } from '@/app/api/server-actions/signout'
+import { signout } from '@/app/server-actions/signout'
 import React from 'react'
 
 const SignoutButton = () => {

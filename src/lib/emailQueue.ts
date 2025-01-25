@@ -7,13 +7,11 @@ const emailQueue = new Queue('emailQueue', { connection: redisConnection })
 
 export async function fetchAndScheduleJobs({ days }: { days: number }) {
   const now = new Date()
-  const currentHour = new Date(now.setMinutes(0, 0, 0))
-  const daysLater = new Date(currentHour.getTime() + days * 24 * 60 * 60 * 1000)
-  // Fetch schedules for the next 1 days
+  const daysLater = new Date(now.setHours(0, 0, 0, 0) + days * 24 * 60 * 60 * 1000)
+  // Fetch schedules for the next 1 days or any which has open time in past
   const capsulesToQueue = await prisma.capsule.findMany({
     where: {
       scheduledTo: {
-        gte: now,
         lte: daysLater
       },
       status: 'PENDING'
