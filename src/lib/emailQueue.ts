@@ -19,8 +19,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
   })
 
   for (const capsule of capsulesToQueue) {
-    const delay = new Date(capsule.scheduledTo).getTime() - now.getTime()
-
+    const delay = new Date(capsule.scheduledTo).getTime() - Date.now()
     // Add job to BullMQ with delay
     await emailQueue.add(
       'sendEmail',
