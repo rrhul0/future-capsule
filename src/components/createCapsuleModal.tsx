@@ -2,6 +2,12 @@ import { Modal, Button, Textarea, Flex, MultiSelect } from '@mantine/core'
 import { createCapsuleAction } from '@/app/server-actions/capsule'
 import { DateInput, DateValue, TimeInput } from '@mantine/dates'
 import { useState } from 'react'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => void }) => {
   const [emails, setEmails] = useState<string[]>([])
@@ -18,23 +24,35 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
 
   const onDateChange = (date: DateValue) => {
     setOpenDate(date)
+    if (date) {
+      const tzOffset = new Date().getTimezoneOffset()
+      const openDatems = new Date(date).getTime() + tzOffset * 60 * 1000
+      const currentTimems = Date.now()
+      const diff = openDatems - currentTimems
 
-    const minTime =
-      date &&
-      new Date(date).getTime() - new Date().getTime() > 0 &&
-      new Date(date).getTime() - new Date().getTime() < 24 * 60 * 60 * 1000
-        ? new Date(24 * 60 * 60 * 1000 - new Date(date).getTime() + new Date().getTime() + 5 * 60 * 1000)
-            .toISOString()
-            .slice(11, 16)
-        : undefined
-    setMinTime(minTime)
+      const minTime =
+        0 < diff && diff < 24 * 60 * 60 * 1000 // match diff to 24 hours
+          ? new Date(24 * 60 * 60 * 1000 - diff + 5 * 60 * 1000).toISOString().slice(11, 16) // also add a 5 min offset
+          : undefined
+      setMinTime(minTime)
+      if (minTime) setOpenTime(minTime)
+    }
+  }
 
-    if (minTime) setOpenTime(minTime)
+  const action = () => {
+    if (openDate && openTime && emails.length && message) {
+      const date = dayjs(openDate).tz('UTC').format('YYYY-MM-DD')
+      const openTimeStamp = dayjs
+        .tz(`${date} ${openTime}`, Intl.DateTimeFormat().resolvedOptions().timeZone)
+        .tz('UTC')
+        .format('YYYY-MM-DDTHH:mm:ss')
+      createCapsuleAction({ emails, message, timestamp: openTimeStamp }).then(close)
+    }
   }
 
   return (
     <Modal opened={opened} onClose={close} title='Create new future capsule'>
-      <form action={(data) => createCapsuleAction(data).then(close)} method='post'>
+      <form action={action} method='post'>
         <MultiSelect
           data={multiSelectData}
           value={emails}
@@ -57,11 +75,12 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
         />
+        <input type='hidden' name='tzOffset' defaultValue={new Date().getTimezoneOffset().toString()} />
         <Flex>
           <DateInput
             label='Open date'
             name='openDate'
-            minDate={new Date(new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000)}
+            minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
             className='basis-2/3'
             value={openDate}
             onChange={onDateChange}

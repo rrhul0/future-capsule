@@ -12,7 +12,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
   const capsulesToQueue = await prisma.capsule.findMany({
     where: {
       scheduledTo: {
-        lte: daysLater
+        lt: daysLater
       },
       status: 'PENDING'
     }
@@ -39,7 +39,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
     }
   })
 
-  console.log(`${capsulesToQueue.length} Jobs scheduled for the next ${days} days.`)
+  console.log(`${capsulesToQueue.length} Jobs scheduled of time ${now.toISOString()} to ${daysLater.toISOString()}.`)
   await emailQueue.close()
   redisConnection.disconnect()
   await prisma.$disconnect()

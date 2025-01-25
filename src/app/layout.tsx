@@ -7,6 +7,7 @@ import { createTheme, MantineProvider } from '@mantine/core'
 
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
+import { DatesProvider } from '@mantine/dates'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -39,7 +40,9 @@ export default function RootLayout({
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <MantineProvider theme={theme} defaultColorScheme='auto'>
-          {children}
+          <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
+            {children}
+          </DatesProvider>
         </MantineProvider>
       </body>
     </html>
