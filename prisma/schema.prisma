@@ -62,4 +62,5 @@ enum CapsuleStatus {
   SENT
   QUEUED
   PENDING
+  FAILED
 }

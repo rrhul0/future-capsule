@@ -24,7 +24,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
     // Add job to BullMQ with delay
     await emailQueue.add(
       'sendEmail',
-      { emails: capsule.recipientEmails, content: capsule.content },
+      { emails: capsule.recipientEmails, content: capsule.content, capsuleId: capsule.id },
       { delay, attempts: 3 }
     )
   }
