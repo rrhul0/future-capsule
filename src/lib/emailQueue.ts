@@ -39,7 +39,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
     }
   })
 
-  console.log(`Jobs scheduled for the next ${days} days.`)
+  console.log(`${capsulesToQueue.length} Jobs scheduled for the next ${days} days.`)
   await emailQueue.close()
   redisConnection.disconnect()
   await prisma.$disconnect()
