@@ -15,14 +15,14 @@ const sendEmail = async ({
   subject = 'Your Future Capsule',
   htmlContent
 }: {
-  to: string
+  to: string[]
   subject?: string
   htmlContent: string
 }) => {
   const emailData: SendMailOptions = {
     subject: subject,
     html: htmlContent,
-    to: [{ address: to, name: '' }],
+    to: to.map((mail) => ({ address: mail, name: '' })),
     from: { address: 'future-capsule@clammy.xyz', name: 'Future Capsule' }
   }
 

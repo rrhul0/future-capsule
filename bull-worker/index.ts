@@ -6,12 +6,12 @@ import { redisConnection } from '../src/utils/redis'
 const worker = new Worker(
   'emailQueue',
   async (job) => {
-    const { email, content } = job.data as { email: string; content: string }
+    const { emails, content } = job.data as { emails: string[]; content: string }
 
     // Replace this with your email-sending logic
-    await sendEmail({ to: email, htmlContent: content })
+    await sendEmail({ to: emails, htmlContent: content })
 
-    console.log(`Email sent to ${email}`)
+    console.log(`Email sent to ${emails.join(', ')}`)
   },
   { connection: redisConnection }
 )
