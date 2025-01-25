@@ -1,4 +1,4 @@
-import CreateCapsule from '@/components/createCapsuleModel'
+import CreateCapsule from '@/components/createCapsule'
 import SignoutButton from '@/components/signoutButton'
 import React from 'react'
 

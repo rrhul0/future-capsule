@@ -12,7 +12,11 @@ export const createCapsuleAction = async (data: FormData) => {
   const time = data.get('openTime') as string
   const date = data.get('openDate') as string
 
-  const utcDateTime = new Date(new Date(date).setHours(parseInt(time.split(':')[0]), parseInt(time.split(':')[1])))
+  const utcDateTime = new Date(new Date(date).setHours(parseInt(time.split(':')[0]), parseInt(time.split(':')[1], 0)))
+
+  if (utcDateTime.getTime() - new Date().getTime() < 24 * 60 * 60 * 1000) {
+    return { error: 'Capsule must be scheduled at least 24 hours in the future' }
+  }
 
   await prisma.capsule.create({
     data: {
@@ -27,5 +31,6 @@ export const createCapsuleAction = async (data: FormData) => {
       }
     }
   })
+
   return { status: 'success' }
 }
