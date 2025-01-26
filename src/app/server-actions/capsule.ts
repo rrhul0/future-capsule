@@ -5,7 +5,6 @@ import { auth } from '@auth'
 import dayjs from 'dayjs'
 
 export type CapsuleCreateAction = {
-  emails: string[]
   message: string
   timestamp: string
 }

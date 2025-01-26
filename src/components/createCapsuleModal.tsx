@@ -1,4 +1,4 @@
-import { Modal, Button, Textarea, Flex, MultiSelect } from '@mantine/core'
+import { Modal, Button, Textarea, Flex } from '@mantine/core'
 import { createCapsuleAction } from '@/app/server-actions/capsule'
 import { DateInput, DateValue, TimeInput } from '@mantine/dates'
 import { useState } from 'react'
@@ -13,7 +13,6 @@ dayjs.extend(timezone)
 dayjs.extend(duration)
 
 type FormvaluesType = {
-  emails: string[]
   message: string
   openDate?: DateValue
   openTime?: string
@@ -23,26 +22,17 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
   const form = useForm<FormvaluesType>({
     mode: 'uncontrolled',
     initialValues: {
-      emails: [],
       message: '',
       openTime: '10:00'
     },
     validate: {
-      emails: (value) => (value.length ? null : 'Emails are required'),
       message: (value) => (value ? null : 'Message is required'),
       openDate: (value) => (value ? null : 'Open date is required'),
       openTime: (value) => (value ? null : 'Open time is required')
     }
   })
 
-  const [multiSelectData, setMultiSelectData] = useState<string[]>()
   const [minTime, setMinTime] = useState<string | undefined>(undefined)
-
-  const onChangeSearch = (value: string) => {
-    const emails = form.getValues().emails
-    if (!value) setMultiSelectData(emails)
-    else setMultiSelectData([...emails, value])
-  }
 
   const onDateChange = (date: DateValue) => {
     form.setValues({ openDate: date })
@@ -61,32 +51,16 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
   const action = () => {
     form.validate()
     if (form.isValid()) {
-      const { openDate, openTime, emails, message } = form.getValues()
+      const { openDate, openTime, message } = form.getValues()
       const date = dayjs(openDate).tz('UTC').format('YYYY-MM-DD')
       const openTimeStamp = dayjs.tz(`${date} ${openTime}`).tz('UTC').format('YYYY-MM-DDTHH:mm:ss')
-      createCapsuleAction({ emails, message, timestamp: openTimeStamp }).then(close)
+      createCapsuleAction({ message, timestamp: openTimeStamp }).then(close)
     }
   }
 
   return (
     <Modal opened={opened} onClose={close} title='Create new future capsule'>
       <form action={action} method='post'>
-        <MultiSelect
-          data={multiSelectData}
-          {...form.getInputProps('emails')}
-          onChange={(values) => {
-            if (values.at(-1)?.match(/^[^@]+@[^@]+\.[^@]+$/)) {
-              form.setValues({ emails: values })
-              setMultiSelectData(values)
-            }
-          }}
-          searchable
-          onRemove={(value) => {
-            form.setValues({ emails: form.getValues().emails.filter((email) => email !== value) })
-          }}
-          onSearchChange={onChangeSearch}
-          name='emails'
-        />
         <Textarea label='Capsule message' name='message' {...form.getInputProps('message')} />
         <input type='hidden' name='tzOffset' defaultValue={new Date().getTimezoneOffset().toString()} />
         <Flex gap={10}>
