@@ -3,17 +3,27 @@ import { Worker } from 'bullmq'
 import { redisConnection } from '../src/utils/redis'
 import { prisma } from '../prisma/prisma'
 
-type EmailJobData = {
-  emails: string[]
+export type EmailJobData = {
   content: string
   capsuleId: string
+  userIds: string[]
 }
 
 // Setup BullMQ worker
 const worker = new Worker<EmailJobData>(
   'emailQueue',
   async (job) => {
-    const { emails, content, capsuleId } = job.data
+    const { userIds, content, capsuleId } = job.data
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { recipientServices: { select: { serviceValue: true, type: true } } }
+    })
+    const emails = users.reduce<string[]>((acc, user) => {
+      const email = user.recipientServices.find((s) => s.type === 'EMAIL')
+      if (email) acc.push(email.serviceValue)
+      return acc
+    }, [])
+    console.log(`Sending email to ${emails.join(', ')} with content: ${content}`)
     await sendEmail({ to: emails, htmlContent: content })
     await prisma.capsule.update({ where: { id: capsuleId }, data: { status: 'SENT' } })
 

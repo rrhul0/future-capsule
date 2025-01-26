@@ -1,9 +1,10 @@
 import { redisConnection } from '../utils/redis'
 import { prisma } from '../../prisma/prisma'
 import { Queue } from 'bullmq'
+import { EmailJobData } from '../../bull-worker'
 
 // Setup BullMQ queue
-const emailQueue = new Queue('emailQueue', { connection: redisConnection })
+const emailQueue = new Queue<EmailJobData>('emailQueue', { connection: redisConnection })
 
 export async function fetchAndScheduleJobs({ days }: { days: number }) {
   const now = new Date()
@@ -15,6 +16,13 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
         lt: daysLater
       },
       status: 'PENDING'
+    },
+    include: {
+      sharedUsers: {
+        select: {
+          id: true
+        }
+      }
     }
   })
 
@@ -23,7 +31,11 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
     // Add job to BullMQ with delay
     await emailQueue.add(
       'sendEmail',
-      { emails: capsule.recipientEmails, content: capsule.content, capsuleId: capsule.id },
+      {
+        userIds: [capsule.authorId, ...capsule.sharedUsers.map((u) => u.id)],
+        content: capsule.content,
+        capsuleId: capsule.id
+      },
       { delay, attempts: 3 }
     )
   }

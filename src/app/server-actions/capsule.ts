@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@prisma-client'
-import { auth } from '../auth'
+import { auth } from '@auth'
 import dayjs from 'dayjs'
 
 export type CapsuleCreateAction = {
@@ -10,9 +10,9 @@ export type CapsuleCreateAction = {
   timestamp: string
 }
 
-export const createCapsuleAction = async ({ emails, message, timestamp }: CapsuleCreateAction) => {
+export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateAction) => {
   const session = await auth()
-  if (!session || !session.user || !session.user.email) return { error: 'You must be logged in to create a capsule' }
+  if (!session || !session.user || !session.user.id) return { error: 'You must be logged in to create a capsule' }
 
   const diffInDays = dayjs(timestamp).diff(dayjs(), 'day', true)
   if (diffInDays < 1) {
@@ -24,12 +24,7 @@ export const createCapsuleAction = async ({ emails, message, timestamp }: Capsul
       content: message,
       scheduledTo: new Date(timestamp),
       status: 'PENDING',
-      recipientEmails: emails,
-      author: {
-        connect: {
-          email: session.user.email
-        }
-      }
+      authorId: session.user.id
     }
   })
 
