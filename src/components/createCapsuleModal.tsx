@@ -5,9 +5,11 @@ import { useState } from 'react'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
+import duration from 'dayjs/plugin/duration'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
+dayjs.extend(duration)
 
 const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => void }) => {
   const [emails, setEmails] = useState<string[]>([])
@@ -25,27 +27,19 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
   const onDateChange = (date: DateValue) => {
     setOpenDate(date)
     if (date) {
-      const tzOffset = new Date().getTimezoneOffset()
-      const openDatems = new Date(date).getTime() + tzOffset * 60 * 1000
-      const currentTimems = Date.now()
-      const diff = openDatems - currentTimems
+      const openDatems = dayjs.tz(date.toISOString()).tz('UTC')
+      const diffInDays = openDatems.diff(dayjs().add(5, 'minutes'), 'day', true) // get diff in days from now (+ 5 mins)
+      const minTime = 0 < diffInDays && diffInDays < 1 ? dayjs.duration(1 - diffInDays, 'day') : undefined
 
-      const minTime =
-        0 < diff && diff < 24 * 60 * 60 * 1000 // match diff to 24 hours
-          ? new Date(24 * 60 * 60 * 1000 - diff + 5 * 60 * 1000).toISOString().slice(11, 16) // also add a 5 min offset
-          : undefined
-      setMinTime(minTime)
-      if (minTime) setOpenTime(minTime)
+      setMinTime(minTime?.format('HH:mm'))
+      if (minTime) setOpenTime(minTime.format('HH:mm'))
     }
   }
 
   const action = () => {
     if (openDate && openTime && emails.length && message) {
       const date = dayjs(openDate).tz('UTC').format('YYYY-MM-DD')
-      const openTimeStamp = dayjs
-        .tz(`${date} ${openTime}`, Intl.DateTimeFormat().resolvedOptions().timeZone)
-        .tz('UTC')
-        .format('YYYY-MM-DDTHH:mm:ss')
+      const openTimeStamp = dayjs.tz(`${date} ${openTime}`).tz('UTC').format('YYYY-MM-DDTHH:mm:ss')
       createCapsuleAction({ emails, message, timestamp: openTimeStamp }).then(close)
     }
   }
