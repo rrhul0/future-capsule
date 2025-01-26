@@ -16,8 +16,7 @@ model User {
   accounts Account[]
 
   authoredCapsules Capsule[] @relation("CapsuleAuthorUser")
-  consumedCapsules Capsule[] @relation("CapsuleConsumerUser")
-  sharedCapsules   Capsule[] @relation("CapsuleSharerUser")
+  ownedCapsules    Capsule[] @relation("CapsuleOwnedUser")
 
   recipientServices UserRecipientService[] @relation("UserRecipientService")
 
@@ -56,14 +55,15 @@ model Capsule {
   author   User   @relation("CapsuleAuthorUser", fields: [authorId], references: [id])
 
   ownerId           String
-  owner             User                   @relation("CapsuleConsumerUser", fields: [ownerId], references: [id])
+  owner             User                   @relation("CapsuleOwnedUser", fields: [ownerId], references: [id])
   // if user override the default recipient service
   // make sure capsule only have recipient services owned by owner user
   // also if no recipient service is attached then all of the services are enabled
   recipientServices UserRecipientService[] @relation("CapsuleRecipientService")
 
-  sharedById String?
-  sharedBy   User?   @relation("CapsuleSharerUser", fields: [sharedById], references: [id])
+  originalCapsuleId String?
+  originalCapsule   Capsule?  @relation("CapsuleToCapsule", fields: [originalCapsuleId], references: [id])
+  derivedCapsules   Capsule[] @relation("CapsuleToCapsule")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
