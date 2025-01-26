@@ -18,11 +18,7 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
       status: 'PENDING'
     },
     include: {
-      sharedUsers: {
-        select: {
-          id: true
-        }
-      }
+      recipientServices: true
     }
   })
 
@@ -32,9 +28,9 @@ export async function fetchAndScheduleJobs({ days }: { days: number }) {
     await emailQueue.add(
       'sendEmail',
       {
-        userIds: [capsule.authorId, ...capsule.sharedUsers.map((u) => u.id)],
         content: capsule.content,
-        capsuleId: capsule.id
+        capsuleId: capsule.id,
+        recipientServiceIds: capsule.recipientServices.map((s) => s.id)
       },
       { delay, attempts: 3 }
     )

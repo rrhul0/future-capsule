@@ -34,7 +34,7 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
     getUser: async (id) => {
       const user = await p.user.findUnique({ where: { id } })
       if (!user) return null
-      const reciepentService = await p.userRecipientServices.findFirst({
+      const reciepentService = await p.userRecipientService.findFirst({
         where: {
           type: 'EMAIL',
           userId: user.id
@@ -45,15 +45,15 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
       return { ...user, email: reciepentService?.serviceValue, emailVerified: reciepentService?.createdAt }
     },
     getUserByEmail: async (email) => {
-      const reciepentService = await p.userRecipientServices.findFirst({
+      const reciepentService = await p.userRecipientService.findFirst({
         where: { type: 'EMAIL', serviceValue: email },
         include: {
-          User: true
+          user: true
         }
       })
       if (!reciepentService) return null
       return {
-        ...reciepentService.User,
+        ...reciepentService.user,
         email: reciepentService?.serviceValue,
         emailVerified: reciepentService?.createdAt
       }

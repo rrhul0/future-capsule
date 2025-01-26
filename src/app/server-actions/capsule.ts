@@ -24,7 +24,8 @@ export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateA
       content: message,
       scheduledTo: new Date(timestamp),
       status: 'PENDING',
-      authorId: session.user.id
+      authorId: session.user.id,
+      ownerId: session.user.id
     }
   })
 

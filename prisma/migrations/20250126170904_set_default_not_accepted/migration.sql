@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "capsules" ALTER COLUMN "status" SET DEFAULT 'NOT_ACCEPTED';

@@ -6,24 +6,22 @@ import { prisma } from '../prisma/prisma'
 export type EmailJobData = {
   content: string
   capsuleId: string
-  userIds: string[]
+  recipientServiceIds: string[]
 }
 
 // Setup BullMQ worker
 const worker = new Worker<EmailJobData>(
   'emailQueue',
   async (job) => {
-    const { userIds, content, capsuleId } = job.data
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { recipientServices: { select: { serviceValue: true, type: true } } }
+    const { recipientServiceIds, content, capsuleId } = job.data
+    const recipientServices = await prisma.userRecipientService.findMany({
+      where: { id: { in: recipientServiceIds } }
     })
-    const emails = users.reduce<string[]>((acc, user) => {
-      const email = user.recipientServices.find((s) => s.type === 'EMAIL')
-      if (email) acc.push(email.serviceValue)
+    const emails = recipientServices.reduce<string[]>((acc, service) => {
+      if (service.type === 'EMAIL') acc.push(service.serviceValue)
       return acc
     }, [])
-    console.log(`Sending email to ${emails.join(', ')} with content: ${content}`)
+
     await sendEmail({ to: emails, htmlContent: content })
     await prisma.capsule.update({ where: { id: capsuleId }, data: { status: 'SENT' } })
 
