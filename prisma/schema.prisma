@@ -15,6 +15,12 @@ model User {
 
   accounts Account[]
 
+  DefaultAcceptUsers User[] @relation("DefaultAcceptUserRelation")
+  DefaultAccepedBy   User[] @relation("DefaultAcceptUserRelation")
+
+  BlockedUsers User[] @relation("BlockedUserRelation")
+  BlockedBy    User[] @relation("BlockedUserRelation")
+
   authoredCapsules Capsule[] @relation("CapsuleAuthorUser")
   ownedCapsules    Capsule[] @relation("CapsuleOwnedUser")
 
@@ -46,10 +52,12 @@ model UserRecipientService {
 }
 
 model Capsule {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   content     String
-  status      CapsuleStatus @default(NOT_ACCEPTED)
   scheduledTo DateTime
+
+  status        CapsuleStatus        @default(NOT_ACCEPTED)
+  sharingAccess CapsuleSharingAccess @default(NO_ONE)
 
   authorId String
   author   User   @relation("CapsuleAuthorUser", fields: [authorId], references: [id])
@@ -84,6 +92,12 @@ enum CapsuleStatus {
   FAILED
   DISABLED
   NOT_ACCEPTED
+}
+
+enum CapsuleSharingAccess {
+  ANYONE_WITH_LINK
+  SPECIFIC_USERS
+  NO_ONE
 }
 
 model Account {
