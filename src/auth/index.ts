@@ -56,7 +56,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   callbacks: {
     authorized: async ({ auth, request }) => {
-      return request.nextUrl.pathname === '/' || !!auth
+      if (request.nextUrl.pathname === '/' || request.nextUrl.pathname.includes('/share/capsule')) return true
+      return !!auth
     },
     jwt: async ({ token, user }) => {
       if (user && user.id) {

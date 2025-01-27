@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
+    "dev": "dotenvx run -- concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
     "dev:cron": "dotenvx run -- tsx cron/index.ts",
     "build": "prisma migrate deploy && next build",
     "build:worker": "tsc bull-worker/index.ts --outDir bull-worker-dist",

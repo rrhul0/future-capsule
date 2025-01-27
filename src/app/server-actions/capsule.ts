@@ -4,6 +4,7 @@ import { prisma } from '@prisma-client'
 import dayjs from 'dayjs'
 import getUser from '@/lib/getUser'
 import { CapsuleSharingAccess } from '@prisma/client'
+import { signIn } from '@/auth'
 
 export type CapsuleCreateAction = {
   message: string
@@ -20,13 +21,18 @@ export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateA
     return { error: 'Capsule must be scheduled at least 24 hours in the future' }
   }
 
-  await prisma.capsule.create({
+  const capsule = await prisma.capsule.create({
     data: {
       content: message,
       scheduledTo: new Date(timestamp),
       status: 'PENDING',
       ownerId: user.id
     }
+  })
+
+  await prisma.capsule.update({
+    where: { id: capsule.id },
+    data: { rootCapsuleId: capsule.id }
   })
 
   return { status: 'success' }
@@ -49,43 +55,46 @@ export const changeSharingAccess = async (capsuleId: string, sharingAccess: Caps
 
 export const shareCapsule = async ({
   capsuleId,
-  userIds
+  userIds,
+  acceptSharedCapsule = false
 }: {
   capsuleId: string
   userIds: string[]
+  acceptSharedCapsule?: boolean
 }): Promise<{ status: StatusType; error?: string } | { userId: string; status: StatusType; error?: string }[]> => {
   const currentUser = await getUser()
 
-  // 1. Check if current user owns the capsule
-  // 2. check if capsule have compatible sharing access
   const capsule = await prisma.capsule.findUnique({
     where: { id: capsuleId }
   })
   if (!capsule) return { error: 'Capsule not found', status: 'failed' }
-  if (capsule.ownerId !== currentUser.id) return { error: 'Capsule is not owned by you', status: 'failed' }
-  if (capsule.sharingAccess === 'NO_ONE')
+
+  const ownerUserId = acceptSharedCapsule ? capsule.ownerId : currentUser.id
+
+  // 1. Check if current user owns the capsule
+  // do not check it user is accepting the shared capsule by link
+  if (!acceptSharedCapsule && capsule.ownerId !== currentUser.id)
+    return { error: 'Capsule is not owned by you', status: 'failed' }
+
+  // 2. Check if user have more then 24 hours expire time
+  if (dayjs(capsule?.scheduledTo).diff(dayjs(), 'day') < 1)
+    return { error: 'Capsule must be scheduled at least 24 hours in the future', status: 'failed' }
+
+  // 3. check if capsule have compatible sharing access
+  if (
+    (acceptSharedCapsule && capsule.sharingAccess !== 'ANYONE_WITH_LINK') ||
+    (!acceptSharedCapsule && capsule.sharingAccess === 'NO_ONE')
+  )
     return { error: 'Capsule cant be shared, change the permission first', status: 'failed' }
 
-  // 3. Check if current user isn't blocked by any user to which capsule is shared
+  // 4. Check if current user isn't blocked by any user to which capsule is shared
   // or if any user to which capsule is shared is blocked by current user
   const currentUserData = await prisma.user.findUnique({
-    where: { id: currentUser.id },
+    where: { id: ownerUserId },
     select: {
-      BlockedUsers: {
-        select: {
-          id: true
-        }
-      },
-      BlockedBy: {
-        select: {
-          id: true
-        }
-      },
-      DefaultAccepedBy: {
-        select: {
-          id: true
-        }
-      }
+      BlockedUsers: { select: { id: true } },
+      BlockedBy: { select: { id: true } },
+      DefaultAccepedBy: { select: { id: true } }
     }
   })
   if (!currentUserData) return { error: 'User not found', status: 'failed' }
@@ -101,10 +110,12 @@ export const shareCapsule = async ({
       if (blockedByCurrentUser.includes(userId))
         return { userId, error: 'You have blocked this user,cant send capsule', status: 'failed' }
 
-      // 4. check if the same capsule (check for root capsuleId) is already present in users capsule's
+      // 5. check if the same capsule (check for root capsuleId) is already present in users capsule's
       const isCapsuleAlreadyShared = await prisma.capsule.findFirst({
-        where: { ownerId: userId, rootCapsuleId: capsule.rootCapsuleId }
+        where: { ownerId: userId, rootCapsuleId: capsule.rootCapsuleId ?? capsuleId },
+        include: { owner: true }
       })
+
       if (isCapsuleAlreadyShared) return { userId, error: 'Capsule already shared with this user', status: 'failed' }
 
       const isDefaultAcceped = defaultAccepedBy.includes(userId)
@@ -127,4 +138,9 @@ export const shareCapsule = async ({
     })
   )
   return results
+}
+
+export const acceptLinkSharedCapsule = async ({ id, userId }: { id: string; userId?: string }) => {
+  if (!userId) await signIn('', { redirectTo: `/share/capsule/${id}?accept=true` })
+  else return shareCapsule({ capsuleId: id, userIds: [userId], acceptSharedCapsule: true })
 }

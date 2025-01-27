@@ -7,7 +7,7 @@ const CapsulesGrid = async () => {
   const user = await getUser()
   const capsules = await prisma.capsule.findMany({
     where: { ownerId: user.id },
-    include: { author: true, originalCapsule: { include: { owner: true } } },
+    include: { parentCapsule: { select: { owner: true } }, rootCapsule: { select: { owner: true } } },
     orderBy: { scheduledTo: 'asc' }
   })
   return (

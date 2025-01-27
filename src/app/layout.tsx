@@ -9,11 +9,11 @@ import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
 import { DatesProvider } from '@mantine/dates'
 import { ContactsStoreProvider } from '@/store/contactsProvider'
-import getUser from '@/lib/getUser'
 import { prisma } from '@prisma-client'
-import { redirect } from 'next/navigation'
 
 import { ToastContainer } from 'react-toastify'
+import { auth } from '@/auth'
+import { ContactType } from '@/store/contacts'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -39,20 +39,21 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const user = await getUser()
-  const userData = await prisma.user.findFirst({
-    where: { id: user.id },
-    select: {
-      Contacts: {
-        select: {
-          id: true,
-          name: true,
-          userName: true
+  const session = await auth()
+  let userData: { Contacts: ContactType[] } | null = null
+  if (session && session.user)
+    userData = await prisma.user.findFirst({
+      where: { id: session.user.id },
+      select: {
+        Contacts: {
+          select: {
+            id: true,
+            name: true,
+            userName: true
+          }
         }
       }
-    }
-  })
-  if (!userData) return redirect('/auth/signin')
+    })
 
   return (
     <html lang='en'>
