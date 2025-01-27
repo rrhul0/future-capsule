@@ -39,7 +39,7 @@ model UserRecipientService {
   serviceValue   String
   defaultEnabled Boolean              @default(true)
 
-  user   User   @relation(fields: [userId], references: [id], name: "UserRecipientService")
+  user   User   @relation(fields: [userId], references: [id], name: "UserRecipientService", onDelete: Cascade)
   userId String
 
   createdAt DateTime @default(now())

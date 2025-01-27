@@ -17,7 +17,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Gitlab({
       clientId: process.env.GITLAB_ID!,
-      clientSecret: process.env.GITLAB_SECRET!
+      clientSecret: process.env.GITLAB_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name,
+          email: profile.email,
+          image: profile.avatar_url
+        }
+      }
     })
   ],
   session: {

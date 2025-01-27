@@ -69,7 +69,6 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
           }
         }
       })
-      console.log('get user by account', account)
       if (!account) return null
 
       return {
