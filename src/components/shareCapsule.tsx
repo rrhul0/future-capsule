@@ -4,18 +4,23 @@ import { ActionIcon, Button, CopyButton, Modal, Select, Tooltip } from '@mantine
 import { useDisclosure } from '@mantine/hooks'
 import { Check, Copy } from '@phosphor-icons/react'
 import { CapsuleSharingAccess } from '@prisma/client'
-import React from 'react'
+import React, { useState } from 'react'
 import SelectUsersToShare from './selectUsersToShare'
 
 const APP_URL = (process.env.AUTH_URL ?? 'http://localhost:3000/auth').replace(/auth\/*/, '')
 
 const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: CapsuleSharingAccess }) => {
   const [opened, { open, close }] = useDisclosure(false)
+  const [sharingAccessState, setSharingAccess] = useState(sharingAccess)
 
   const shareLink = APP_URL + 'share-capsule-' + id
 
   const onChangeAccess = (value: string | null) => {
-    if (value) changeSharingAccess(id, value as CapsuleSharingAccess)
+    if (value) {
+      changeSharingAccess(id, value as CapsuleSharingAccess).then((res) => {
+        if (res.status === 'success') setSharingAccess(res.newAccess)
+      })
+    }
   }
 
   return (
@@ -33,7 +38,7 @@ const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: Capsul
             defaultValue={sharingAccess}
             onChange={onChangeAccess}
           />
-          <SelectUsersToShare />
+          {sharingAccessState !== 'NO_ONE' && <SelectUsersToShare capsuleId={id} />}
           <div className='flex gap-2 border border-gray-300 rounded-md py-0.5 px-2 bg-slate-600'>
             <div>{shareLink}</div>
             <CopyButton value={shareLink} timeout={2000}>

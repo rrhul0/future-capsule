@@ -13,6 +13,8 @@ import getUser from '@/lib/getUser'
 import { prisma } from '@prisma-client'
 import { redirect } from 'next/navigation'
 
+import { ToastContainer } from 'react-toastify'
+
 const theme = createTheme({
   /** Put your mantine theme override here */
 })
@@ -62,6 +64,7 @@ export default async function RootLayout({
           <MantineProvider theme={theme} defaultColorScheme='auto'>
             <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
               {children}
+              <ToastContainer />
             </DatesProvider>
           </MantineProvider>
         </ContactsStoreProvider>

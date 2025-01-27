@@ -10,6 +10,8 @@ export type CapsuleCreateAction = {
   timestamp: string
 }
 
+export type StatusType = 'success' | 'failed'
+
 export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateAction) => {
   const user = await getUser()
 
@@ -43,5 +45,87 @@ export const changeSharingAccess = async (capsuleId: string, sharingAccess: Caps
     return { error: 'You do not have permission to change sharing access or capsule not found' }
   }
 
-  return { status: 'success' }
+  return { status: 'success', newAccess: sharingAccess }
+}
+
+export const shareCapsule = async ({
+  capsuleId,
+  userIds
+}: {
+  capsuleId: string
+  userIds: string[]
+}): Promise<{ status: StatusType; error?: string } | { userId: string; status: StatusType; error?: string }[]> => {
+  const currentUser = await getUser()
+
+  // 1. Check if current user owns the capsule
+  // 2. check if capsule have compatible sharing access
+  const capsule = await prisma.capsule.findUnique({
+    where: { id: capsuleId }
+  })
+  if (!capsule) return { error: 'Capsule not found', status: 'failed' }
+  if (capsule.ownerId !== currentUser.id) return { error: 'Capsule is not owned by you', status: 'failed' }
+  if (capsule.sharingAccess === 'NO_ONE')
+    return { error: 'Capsule cant be shared, change the permission first', status: 'failed' }
+
+  // 1. Check if current user isn't blocked by any user to which capsule is shared
+  // or if any user to which capsule is shared is blocked by current user
+  const currentUserData = await prisma.user.findUnique({
+    where: { id: currentUser.id },
+    select: {
+      BlockedUsers: {
+        select: {
+          id: true
+        }
+      },
+      BlockedBy: {
+        select: {
+          id: true
+        }
+      },
+      DefaultAccepedBy: {
+        select: {
+          id: true
+        }
+      }
+    }
+  })
+  if (!currentUserData) return { error: 'User not found', status: 'failed' }
+
+  const blockedCurrentUser = currentUserData.BlockedBy.map((user) => user.id)
+  const blockedByCurrentUser = currentUserData.BlockedUsers.map((user) => user.id)
+  const defaultAccepedBy = currentUserData.DefaultAccepedBy.map((user) => user.id)
+
+  const results = await Promise.all(
+    userIds.map(async (userId): Promise<{ status: StatusType; userId: string; error?: string }> => {
+      if (blockedCurrentUser.includes(userId))
+        return { userId, error: 'You are blocked by this user, cant send capsule', status: 'failed' }
+      if (blockedByCurrentUser.includes(userId))
+        return { userId, error: 'You have blocked this user,cant send capsule', status: 'failed' }
+
+      const isDefaultAcceped = defaultAccepedBy.includes(userId)
+      try {
+        await prisma.capsule.create({
+          data: {
+            content: capsule.content,
+            authorId: capsule.authorId,
+            ownerId: userId,
+            scheduledTo: capsule.scheduledTo,
+            status: isDefaultAcceped ? 'PENDING' : 'NOT_ACCEPTED',
+            sharingAccess: 'NO_ONE',
+            originalCapsuleId: capsuleId
+          }
+        })
+      } catch {
+        return { userId, error: 'Error while sharing capsule', status: 'failed' }
+      }
+      return { userId, status: 'success' }
+    })
+  )
+  return results
+  // const resultObject = results.reduce((acc, result) => {
+  //   acc[result.userId] = { error: result?.error, status: result?.status }
+  //   return acc
+  // }, {} as Record<string, { status?: string; error?: string }>)
+
+  // return resultObject
 }

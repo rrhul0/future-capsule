@@ -69,7 +69,7 @@ model Capsule {
   owner             User                   @relation("CapsuleOwnedUser", fields: [ownerId], references: [id])
   // if user override the default recipient service
   // make sure capsule only have recipient services owned by owner user
-  // also if no recipient service is attached then all of the services are enabled
+  // also if no recipient service is attached then all of the services are default enabled
   recipientServices UserRecipientService[] @relation("CapsuleRecipientService")
 
   originalCapsuleId String?
