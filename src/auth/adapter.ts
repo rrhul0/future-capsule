@@ -9,7 +9,7 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
         data: {
           name: data.name,
           image: data.image,
-          userName: data.name,
+          userName: data.userName,
           recipientServices: {
             create: {
               type: 'EMAIL',
@@ -40,7 +40,6 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
           userId: user.id
         }
       })
-      console.log('get user')
       if (!reciepentService) return null
       return { ...user, email: reciepentService?.serviceValue, emailVerified: reciepentService?.createdAt }
     },

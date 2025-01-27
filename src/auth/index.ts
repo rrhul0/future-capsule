@@ -9,7 +9,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!
+      clientSecret: process.env.GITHUB_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name,
+          email: profile.email,
+          image: profile.avatar_url,
+          userName: profile.login
+        }
+      }
     }),
     Google({
       clientId: process.env.GOOGLE_ID!,
@@ -23,7 +32,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: profile.id.toString(),
           name: profile.name,
           email: profile.email,
-          image: profile.avatar_url
+          image: profile.avatar_url,
+          userName: profile.username
         }
       }
     })
@@ -37,13 +47,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return request.nextUrl.pathname === '/' || !!auth
     },
     jwt: async ({ token, user }) => {
-      if (user) {
+      if (user && user.id) {
         token.id = user.id
+        token.userName = user.userName
       }
       return token
     },
     session: async ({ session, token }) => {
-      session.user.id = token.id as string
+      session.user.id = token.id
+      session.user.userName = token.userName
       return session
     }
   },

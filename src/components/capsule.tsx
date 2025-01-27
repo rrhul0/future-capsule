@@ -21,7 +21,7 @@ const Capsule = async ({
       <div>{isLocked ? 'LOCKED will be open in ' + getTimeLeft(capsule.scheduledTo) : capsule.content}</div>
       {capsule.originalCapsule && <div>Shared by {capsule.originalCapsule.owner.name}</div>}
       {capsule.author && <div>Created by {capsule.author.id === user.id ? 'You' : capsule.author.name}</div>}
-      <ShareCapsule id={capsule.id} />
+      <ShareCapsule id={capsule.id} sharingAccess={capsule.sharingAccess} />
     </div>
   )
 }
