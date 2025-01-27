@@ -25,7 +25,6 @@ export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateA
       content: message,
       scheduledTo: new Date(timestamp),
       status: 'PENDING',
-      authorId: user.id,
       ownerId: user.id
     }
   })
@@ -67,7 +66,7 @@ export const shareCapsule = async ({
   if (capsule.sharingAccess === 'NO_ONE')
     return { error: 'Capsule cant be shared, change the permission first', status: 'failed' }
 
-  // 1. Check if current user isn't blocked by any user to which capsule is shared
+  // 3. Check if current user isn't blocked by any user to which capsule is shared
   // or if any user to which capsule is shared is blocked by current user
   const currentUserData = await prisma.user.findUnique({
     where: { id: currentUser.id },
@@ -102,17 +101,23 @@ export const shareCapsule = async ({
       if (blockedByCurrentUser.includes(userId))
         return { userId, error: 'You have blocked this user,cant send capsule', status: 'failed' }
 
+      // 4. check if the same capsule (check for root capsuleId) is already present in users capsule's
+      const isCapsuleAlreadyShared = await prisma.capsule.findFirst({
+        where: { ownerId: userId, rootCapsuleId: capsule.rootCapsuleId }
+      })
+      if (isCapsuleAlreadyShared) return { userId, error: 'Capsule already shared with this user', status: 'failed' }
+
       const isDefaultAcceped = defaultAccepedBy.includes(userId)
       try {
         await prisma.capsule.create({
           data: {
             content: capsule.content,
-            authorId: capsule.authorId,
             ownerId: userId,
             scheduledTo: capsule.scheduledTo,
             status: isDefaultAcceped ? 'PENDING' : 'NOT_ACCEPTED',
             sharingAccess: 'NO_ONE',
-            originalCapsuleId: capsuleId
+            parentCapsuleId: capsuleId,
+            rootCapsuleId: capsule.rootCapsuleId ?? capsuleId
           }
         })
       } catch {
@@ -122,10 +127,4 @@ export const shareCapsule = async ({
     })
   )
   return results
-  // const resultObject = results.reduce((acc, result) => {
-  //   acc[result.userId] = { error: result?.error, status: result?.status }
-  //   return acc
-  // }, {} as Record<string, { status?: string; error?: string }>)
-
-  // return resultObject
 }

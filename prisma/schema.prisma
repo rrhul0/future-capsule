@@ -24,8 +24,7 @@ model User {
   BlockedUsers User[] @relation("BlockedUserRelation")
   BlockedBy    User[] @relation("BlockedUserRelation")
 
-  authoredCapsules Capsule[] @relation("CapsuleAuthorUser")
-  ownedCapsules    Capsule[] @relation("CapsuleOwnedUser")
+  ownedCapsules Capsule[] @relation("CapsuleOwnedUser")
 
   recipientServices UserRecipientService[] @relation("UserRecipientService")
 
@@ -62,9 +61,6 @@ model Capsule {
   status        CapsuleStatus        @default(NOT_ACCEPTED)
   sharingAccess CapsuleSharingAccess @default(NO_ONE)
 
-  authorId String
-  author   User   @relation("CapsuleAuthorUser", fields: [authorId], references: [id])
-
   ownerId           String
   owner             User                   @relation("CapsuleOwnedUser", fields: [ownerId], references: [id])
   // if user override the default recipient service
@@ -72,9 +68,13 @@ model Capsule {
   // also if no recipient service is attached then all of the services are default enabled
   recipientServices UserRecipientService[] @relation("CapsuleRecipientService")
 
-  originalCapsuleId String?
-  originalCapsule   Capsule?  @relation("CapsuleToCapsule", fields: [originalCapsuleId], references: [id])
-  derivedCapsules   Capsule[] @relation("CapsuleToCapsule")
+  parentCapsuleId String?
+  parentCapsule   Capsule?  @relation("CapsuleToCapsule", fields: [parentCapsuleId], references: [id])
+  childCapsules   Capsule[] @relation("CapsuleToCapsule")
+
+  rootCapsuleId     String?
+  rootCapsule       Capsule?  @relation("RootCapsuleToCapsule", fields: [rootCapsuleId], references: [id])
+  rootChildCapsules Capsule[] @relation("RootCapsuleToCapsule")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
