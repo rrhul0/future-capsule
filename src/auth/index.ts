@@ -18,11 +18,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: profile.avatar_url,
           userName: profile.login
         }
-      }
+      },
+      allowDangerousEmailAccountLinking: true
     }),
     Google({
       clientId: process.env.GOOGLE_ID!,
-      clientSecret: process.env.GOOGLE_SECRET!
+      clientSecret: process.env.GOOGLE_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          userName: profile.email.split('@')[0]
+        }
+      },
+      allowDangerousEmailAccountLinking: true
     }),
     Gitlab({
       clientId: process.env.GITLAB_ID!,
@@ -35,7 +46,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: profile.avatar_url,
           userName: profile.username
         }
-      }
+      },
+      allowDangerousEmailAccountLinking: true
     })
   ],
   session: {
