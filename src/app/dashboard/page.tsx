@@ -13,6 +13,7 @@ const Page = async () => {
       <h1>
         Welcome {user.name} <span className='text-blue-600 italic'>@{user.userName}</span>
       </h1>
+      <p>{user.email}</p>
       <CreateCapsule />
       <CapsulesGrid />
     </div>
