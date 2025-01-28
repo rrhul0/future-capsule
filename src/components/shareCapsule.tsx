@@ -7,13 +7,11 @@ import { CapsuleSharingAccess } from '@prisma/client'
 import React, { useState } from 'react'
 import SelectUsersToShare from './selectUsersToShare'
 
-const APP_URL = (process.env.AUTH_URL ?? 'http://localhost:3000/auth').replace(/auth\/*/, '')
-
 const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: CapsuleSharingAccess }) => {
   const [opened, { open, close }] = useDisclosure(false)
   const [sharingAccessState, setSharingAccess] = useState(sharingAccess)
 
-  const shareLink = APP_URL + 'share-capsule-' + id
+  const shareLink = window.location.origin + '/share-capsule-' + id
 
   const onChangeAccess = (value: string | null) => {
     if (value) {
