@@ -8,18 +8,99 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
+  id       String  @id @default(cuid())
+  userName String  @unique
+  name     String?
+  image    String?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Capsule   Capsule[]
+  accounts Account[]
+
+  Contacts    User[] @relation("UserContactRelation")
+  ContactedBy User[] @relation("UserContactRelation")
+
+  DefaultAcceptUsers User[] @relation("DefaultAcceptUserRelation")
+  DefaultAccepedBy   User[] @relation("DefaultAcceptUserRelation")
+
+  BlockedUsers User[] @relation("BlockedUserRelation")
+  BlockedBy    User[] @relation("BlockedUserRelation")
+
+  ownedCapsules Capsule[] @relation("CapsuleOwnedUser")
+
+  recipientServices UserRecipientService[] @relation("UserRecipientService")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model UserRecipientService {
+  id             String               @id @default(cuid())
+  name           String?
+  type           RecepientServiceType
+  serviceValue   String
+  defaultEnabled Boolean              @default(true)
+
+  user   User   @relation(fields: [userId], references: [id], name: "UserRecipientService", onDelete: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usedByCapsules Capsule[] @relation("CapsuleRecipientService")
+
+  @@unique([userId, type, serviceValue])
+  @@map("user_recipient_service")
+}
+
+model Capsule {
+  id          String   @id @default(cuid())
+  content     String
+  scheduledTo DateTime
+
+  status        CapsuleStatus        @default(NOT_ACCEPTED)
+  sharingAccess CapsuleSharingAccess @default(NO_ONE)
+
+  ownerId           String
+  owner             User                   @relation("CapsuleOwnedUser", fields: [ownerId], references: [id])
+  // if user override the default recipient service
+  // make sure capsule only have recipient services owned by owner user
+  // also if no recipient service is attached then all of the services are default enabled
+  recipientServices UserRecipientService[] @relation("CapsuleRecipientService")
+
+  parentCapsuleId String?
+  parentCapsule   Capsule?  @relation("CapsuleToCapsule", fields: [parentCapsuleId], references: [id])
+  childCapsules   Capsule[] @relation("CapsuleToCapsule")
+
+  rootCapsuleId     String?
+  rootCapsule       Capsule?  @relation("RootCapsuleToCapsule", fields: [rootCapsuleId], references: [id])
+  rootChildCapsules Capsule[] @relation("RootCapsuleToCapsule")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("capsules")
+}
+
+enum RecepientServiceType {
+  EMAIL
+  WHATSAPP
+  TELEGRAM
+}
+
+enum CapsuleStatus {
+  SENT
+  QUEUED
+  PENDING
+  FAILED
+  DISABLED
+  NOT_ACCEPTED
+}
+
+enum CapsuleSharingAccess {
+  ANYONE_WITH_LINK
+  SPECIFIC_USERS
+  NO_ONE
 }
 
 model Account {
@@ -42,24 +123,4 @@ model Account {
 
   @@id([provider, providerAccountId])
   @@map("accounts")
-}
-
-model Capsule {
-  id              String        @id @default(cuid())
-  content         String
-  status          CapsuleStatus @default(PENDING)
-  scheduledTo     DateTime
-  recipientEmails String[] //if recepient email is not varified for same user make sure the scheduled delay is more then 1 month to ensure service is not used wrongfully
-  author          User          @relation(fields: [authorId], references: [id])
-  authorId        String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@map("capsules")
-}
-
-enum CapsuleStatus {
-  SENT
-  QUEUED
-  PENDING
 }
