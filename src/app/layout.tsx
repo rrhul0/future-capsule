@@ -14,6 +14,7 @@ import { prisma } from '@prisma-client'
 import { ToastContainer } from 'react-toastify'
 import { auth } from '@/auth'
 import { ContactType } from '@/store/contacts'
+import { SessionProvider } from 'next-auth/react'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -61,14 +62,16 @@ export default async function RootLayout({
         <ColorSchemeScript />
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
-          <MantineProvider theme={theme} defaultColorScheme='auto'>
-            <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
-              {children}
-              <ToastContainer />
-            </DatesProvider>
-          </MantineProvider>
-        </ContactsStoreProvider>
+        <SessionProvider session={session} basePath='/auth'>
+          <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
+            <MantineProvider theme={theme} defaultColorScheme='auto'>
+              <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
+                {children}
+                <ToastContainer />
+              </DatesProvider>
+            </MantineProvider>
+          </ContactsStoreProvider>
+        </SessionProvider>
       </body>
     </html>
   )

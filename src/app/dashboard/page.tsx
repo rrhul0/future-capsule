@@ -1,5 +1,6 @@
 import CapsulesGrid from '@/components/capsulesGrid'
 import CreateCapsule from '@/components/createCapsule'
+import ShowContactsButton from '@/components/ShowContactsButton'
 import SignoutButton from '@/components/signoutButton'
 import getUser from '@/lib/getUser'
 import React from 'react'
@@ -14,6 +15,7 @@ const Page = async () => {
         Welcome {user.name} <span className='text-blue-600 italic'>@{user.userName}</span>
       </h1>
       <p>{user.email}</p>
+      <ShowContactsButton />
       <CreateCapsule />
       <CapsulesGrid />
     </div>

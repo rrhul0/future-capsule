@@ -4,7 +4,7 @@ import { createStore, useStore } from 'zustand'
 
 export type ContactType = {
   id: string
-  userName: string | null
+  userName: string
   name: string | null
 }
 
