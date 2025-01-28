@@ -5,6 +5,8 @@ import dayjs from 'dayjs'
 import getUser from '@/lib/getUser'
 import { CapsuleSharingAccess } from '@prisma/client'
 import { signIn } from '@/auth'
+import { createFirestoreNotificationEntry, NotificationData } from '@/lib/firebase'
+import { getTimeLeft } from '@/utils/commonUtils'
 
 export type CapsuleCreateAction = {
   message: string
@@ -134,6 +136,22 @@ export const shareCapsule = async ({
       } catch {
         return { userId, error: 'Error while sharing capsule', status: 'failed' }
       }
+
+      // create a firestore notification entry for the user which is receiving the capsule
+      const notificationData: NotificationData = {
+        title: 'Received a capsule',
+        message: `You have received a capsule from ${currentUser.name}, and will be opened after ${getTimeLeft(
+          capsule.scheduledTo
+        )}`,
+        userId,
+        sentBy: {
+          name: currentUser.name ?? undefined,
+          userId: currentUser.id,
+          userName: currentUser.userName
+        }
+      }
+      await createFirestoreNotificationEntry(notificationData)
+
       return { userId, status: 'success' }
     })
   )

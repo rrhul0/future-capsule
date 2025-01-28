@@ -7,13 +7,16 @@ import { createTheme, MantineProvider } from '@mantine/core'
 
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
+import '@mantine/notifications/styles.css'
 import { DatesProvider } from '@mantine/dates'
+import { Notifications } from '@mantine/notifications'
 import { ContactsStoreProvider } from '@/store/contactsProvider'
 import { prisma } from '@prisma-client'
 
 import { ToastContainer } from 'react-toastify'
 import { auth } from '@/auth'
 import { ContactType } from '@/store/contacts'
+import ShowNotifications from '@/components/ShowNotifications'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -66,6 +69,8 @@ export default async function RootLayout({
             <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
               {children}
               <ToastContainer />
+              <Notifications />
+              {session?.user?.id && <ShowNotifications userId={session?.user.id} />}
             </DatesProvider>
           </MantineProvider>
         </ContactsStoreProvider>
