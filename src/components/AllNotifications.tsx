@@ -1,6 +1,7 @@
 'use client'
 import { NotificationType } from '@/lib/firebase'
 import { db } from '@/lib/firebaseInit'
+import { getNotificationTimeString } from '@/utils/timeDate'
 import { Popover } from '@mantine/core'
 import { query, collection, where, onSnapshot } from 'firebase/firestore'
 import { useSession } from 'next-auth/react'
@@ -12,16 +13,22 @@ const AllNotifications = () => {
   const [notifications, setNotifications] = React.useState<NotificationType[]>([])
 
   useEffect(() => {
-    if (!userId) return
     // Real-time listener for user-specific notifications
     const q = query(collection(db, 'share-notifications'), where('userId', '==', userId))
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const data = querySnapshot.docChanges().map((change) => ({
-        id: change.doc.id,
-        ...change.doc.data()
-      })) as unknown as NotificationType[]
-      console.log(data)
-      setNotifications(data)
+      const newNotifications = querySnapshot
+        .docChanges()
+        .filter((change) => change.type === 'added')
+        .map((change) => {
+          console.log(change)
+          return {
+            id: change.doc.id,
+            ...change.doc.data()
+          }
+        }) as unknown as NotificationType[]
+      setNotifications((prevNotifications) =>
+        [...newNotifications, ...prevNotifications].sort((a, b) => b.createdAt - a.createdAt)
+      )
     })
 
     // Cleanup listener on component unmount
@@ -32,12 +39,15 @@ const AllNotifications = () => {
 
   return (
     <Popover
-      width='400'
+      width='500'
       withArrow
       position='bottom'
+      withOverlay
       styles={{
         dropdown: {
-          padding: 0
+          padding: 0,
+          maxHeight: '75vh',
+          overflowY: 'scroll'
         }
       }}
     >
@@ -60,6 +70,7 @@ const AllNotifications = () => {
                 }
               />
               <div>
+                <span className='text-sm font-light'>{getNotificationTimeString(notification)}</span>
                 <h3 className='font-bold text-lg'>{notification.title}</h3>
                 <p className=''>{notification.message}</p>
               </div>
