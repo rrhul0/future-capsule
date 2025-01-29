@@ -13,7 +13,7 @@ export interface NotificationData {
   iconUrl?: string
 }
 
-export interface Notification extends NotificationData {
+export interface NotificationType extends NotificationData {
   isRead: boolean
   createdAt: number
   readAt: number | null

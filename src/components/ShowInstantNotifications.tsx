@@ -4,9 +4,14 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebaseInit'
 import { notifications } from '@mantine/notifications'
 import { NotificationData } from '@/lib/firebase'
+import { useSession } from 'next-auth/react'
 
-const ShowNotifications = ({ userId }: { userId: string }) => {
+const ShowInstantNotifications = () => {
+  const session = useSession()
+  const userId = session.data?.user?.id
+
   useEffect(() => {
+    if (!userId) return
     // Real-time listener for user-specific notifications
     const q = query(collection(db, 'share-notifications'), where('userId', '==', userId))
     let isInitialLoad = true
@@ -38,4 +43,4 @@ const ShowNotifications = ({ userId }: { userId: string }) => {
   return null
 }
 
-export default ShowNotifications
+export default ShowInstantNotifications
