@@ -10,6 +10,7 @@ import '@mantine/dates/styles.css'
 import '@mantine/notifications/styles.css'
 import { DatesProvider } from '@mantine/dates'
 import { Notifications } from '@mantine/notifications'
+import { DatesProvider } from '@mantine/dates'
 import { ContactsStoreProvider } from '@/store/contactsProvider'
 import { prisma } from '@prisma-client'
 
@@ -17,6 +18,7 @@ import { ToastContainer } from 'react-toastify'
 import { auth } from '@/auth'
 import { ContactType } from '@/store/contacts'
 import ShowNotifications from '@/components/ShowNotifications'
+import { SessionProvider } from 'next-auth/react'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -64,16 +66,17 @@ export default async function RootLayout({
         <ColorSchemeScript />
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
-          <MantineProvider theme={theme} defaultColorScheme='auto'>
-            <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
-              {children}
-              <ToastContainer />
-              <Notifications />
-              {session?.user?.id && <ShowNotifications userId={session?.user.id} />}
-            </DatesProvider>
-          </MantineProvider>
-        </ContactsStoreProvider>
+        <SessionProvider session={session} basePath='/auth'>
+          <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
+            <MantineProvider theme={theme} defaultColorScheme='auto'>
+              <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
+                {children}
+                <ToastContainer />
+                <Notifications />
+              </DatesProvider>
+            </MantineProvider>
+          </ContactsStoreProvider>
+        </SessionProvider>
       </body>
     </html>
   )
