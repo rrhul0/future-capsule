@@ -7,13 +7,18 @@ import { createTheme, MantineProvider } from '@mantine/core'
 
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
+import '@mantine/notifications/styles.css'
 import { DatesProvider } from '@mantine/dates'
+import { Notifications } from '@mantine/notifications'
 import { ContactsStoreProvider } from '@/store/contactsProvider'
 import { prisma } from '@prisma-client'
 
 import { ToastContainer } from 'react-toastify'
 import { auth } from '@/auth'
 import { ContactType } from '@/store/contacts'
+import ShowInstantNotifications from '@/components/ShowInstantNotifications'
+import { SessionProvider } from 'next-auth/react'
+import Header from '@/components/Header'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -45,13 +50,7 @@ export default async function RootLayout({
     userData = await prisma.user.findFirst({
       where: { id: session.user.id },
       select: {
-        Contacts: {
-          select: {
-            id: true,
-            name: true,
-            userName: true
-          }
-        }
+        Contacts: { select: { id: true, name: true, userName: true } }
       }
     })
 
@@ -61,14 +60,19 @@ export default async function RootLayout({
         <ColorSchemeScript />
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
-          <MantineProvider theme={theme} defaultColorScheme='auto'>
-            <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
-              {children}
-              <ToastContainer />
-            </DatesProvider>
-          </MantineProvider>
-        </ContactsStoreProvider>
+        <SessionProvider session={session} basePath='/auth'>
+          <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
+            <MantineProvider theme={theme} defaultColorScheme='auto'>
+              <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
+                <Header />
+                {children}
+                <ToastContainer />
+                <Notifications />
+                <ShowInstantNotifications />
+              </DatesProvider>
+            </MantineProvider>
+          </ContactsStoreProvider>
+        </SessionProvider>
       </body>
     </html>
   )
