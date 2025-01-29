@@ -1,5 +1,6 @@
-import { addDoc, collection } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore'
 import { db } from './firebaseInit'
+import { SHARING_NOTIFICATION_COLLECTION } from '@/utils/contants'
 
 export interface NotificationData {
   title: string
@@ -22,7 +23,7 @@ export interface NotificationType extends NotificationData {
 
 export const createFirestoreNotificationEntry = async (notification: NotificationData) => {
   try {
-    const notificationsRef = collection(db, 'share-notifications')
+    const notificationsRef = collection(db, SHARING_NOTIFICATION_COLLECTION)
     const docRef = await addDoc(notificationsRef, {
       ...notification,
       isRead: false,
@@ -34,4 +35,8 @@ export const createFirestoreNotificationEntry = async (notification: Notificatio
     console.error(e)
     return null
   }
+}
+
+export const deleteOneNotification = (notification: NotificationType) => {
+  deleteDoc(doc(db, SHARING_NOTIFICATION_COLLECTION, notification.id))
 }
