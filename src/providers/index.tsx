@@ -6,6 +6,7 @@ import { prisma } from '@prisma-client'
 import { SessionProvider } from 'next-auth/react'
 import React, { ReactNode } from 'react'
 import { ContactsStoreProvider } from './contactsProvider'
+import ReactQueryProvider from './reactQueryProvider'
 
 const theme = createTheme({
   /** Put your mantine theme override here */
@@ -23,15 +24,17 @@ const Providers = async ({ children }: { children: ReactNode }) => {
     })
 
   return (
-    <SessionProvider session={session} basePath='/auth'>
-      <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
-        <MantineProvider theme={theme} defaultColorScheme='auto'>
-          <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
-            {children}
-          </DatesProvider>
-        </MantineProvider>
-      </ContactsStoreProvider>
-    </SessionProvider>
+    <ReactQueryProvider>
+      <SessionProvider session={session} basePath='/auth'>
+        <ContactsStoreProvider contacts={userData?.Contacts ?? []}>
+          <MantineProvider theme={theme} defaultColorScheme='auto'>
+            <DatesProvider settings={{ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }}>
+              {children}
+            </DatesProvider>
+          </MantineProvider>
+        </ContactsStoreProvider>
+      </SessionProvider>
+    </ReactQueryProvider>
   )
 }
 
