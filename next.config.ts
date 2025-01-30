@@ -1,15 +1,19 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/share-capsule-:id(\\w+)',
-        destination: '/share/capsule/:id',
-        permanent: true
-      }
-    ]
-  }
+  rewrites: async () => [
+    {
+      source: '/share-capsule-:id(\\w+)',
+      destination: '/share/capsule/:id'
+    }
+  ],
+  redirects: async () => [
+    {
+      source: '/settings',
+      destination: '/settings/profile',
+      permanent: true
+    }
+  ]
 }
 
 export default nextConfig

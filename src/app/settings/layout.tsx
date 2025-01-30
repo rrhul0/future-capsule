@@ -1,9 +1,9 @@
-import ProfileSidenav from '@/components/ProfileSidenav'
+import Sidenav from '@/components/settings/Sidenav'
 import React, { ReactNode } from 'react'
 
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { getQueryClient } from '@/utils/reactQuery'
-import { getUserData } from '../server-actions/user'
+import { getUserData } from '../server-actions/userProfile'
 
 const ProfileLayout = async ({ children }: { children: ReactNode }) => {
   const queryClient = getQueryClient()
@@ -15,8 +15,8 @@ const ProfileLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <div>
-        <ProfileSidenav />
+      <div className='flex gap-4'>
+        <Sidenav />
         {children}
       </div>
     </HydrationBoundary>
