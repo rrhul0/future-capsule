@@ -1,4 +1,3 @@
-// stores/contactStore.js
 import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
 
@@ -16,7 +15,7 @@ type ContactsState = {
 
 type ContactsActions = {
   setContacts: (contacts: ContactType[]) => void
-  fetchContacts: () => Promise<void>
+  addNewContacts: (contact: ContactType[]) => void
 }
 
 type ContactsStore = ContactsState & ContactsActions
@@ -31,19 +30,10 @@ export const createContactStore = (initState: ContactsState = defaultContactsIni
   createStore<ContactsStore>((set) => ({
     ...initState,
     setContacts: (contacts) => set({ contacts }),
-    fetchContacts: async () => {
-      set({ isLoading: true, error: null })
-      try {
-        const response = await fetch('/api/contacts') // Replace with your API endpoint
-        if (!response.ok) {
-          throw new Error('Failed to fetch contacts')
-        }
-        const data = await response.json()
-        set({ contacts: data, isLoading: false })
-      } catch {
-        set({ error: 'Something went wrong', isLoading: false })
-      }
-    }
+    addNewContacts: (newContacts) =>
+      set(({ contacts }) => ({
+        contacts: [...contacts, ...newContacts]
+      }))
   }))
 
 export type ContactsStoreApi = ReturnType<typeof createContactStore>

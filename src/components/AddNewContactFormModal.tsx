@@ -4,8 +4,10 @@ import React from 'react'
 import ContactCard from './ContactCard'
 import { useDisclosure } from '@mantine/hooks'
 import { useSession } from 'next-auth/react'
+import { useContactStore } from '@/store/contacts'
 
 export type UserType = {
+  id: string
   userName: string
   name: string | null
 }
@@ -13,6 +15,7 @@ export type UserType = {
 const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () => void }) => {
   const [openedDropdown, { open: openDropdown, close: closeDropdown }] = useDisclosure(false)
   const session = useSession()
+  const { addNewContacts } = useContactStore((state) => state)
 
   const [searchResults, setSearchResults] = React.useState<UserType[]>([])
   const [selectedUsers, setSelectedUsers] = React.useState<UserType[]>([])
@@ -50,7 +53,6 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
         setSearchResults([])
         setSelectedUsers([])
       }}
-      className='relative'
     >
       <TextInput
         type='text'
@@ -68,7 +70,7 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
         position={'top'}
         styles={{
           dropdown: {
-            top: '50%',
+            // top: '50%',
             left: '50%',
             transform: 'translate(-50%, 0)'
           }
@@ -108,7 +110,14 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
       <Button
         variant='gradient'
         disabled={!selectedUsers.length}
-        onClick={() => addUsersToContactsList(selectedUsers.map((u) => u.userName))}
+        onClick={async () => {
+          try {
+            await addUsersToContactsList(selectedUsers.map((u) => u.userName))
+          } catch {
+            return
+          }
+          addNewContacts(selectedUsers)
+        }}
       >
         Add to contact list
       </Button>

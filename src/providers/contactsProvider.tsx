@@ -1,6 +1,6 @@
 'use client'
 import { ReactNode, useRef } from 'react'
-import { ContactsStoreApi, ContactsStoreContext, ContactType, createContactStore } from './contacts'
+import { ContactsStoreApi, ContactsStoreContext, ContactType, createContactStore } from '@/store/contacts'
 
 export interface ContactsStoreProviderProps {
   children: ReactNode

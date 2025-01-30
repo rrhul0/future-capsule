@@ -7,6 +7,7 @@ import { CapsuleSharingAccess } from '@prisma/client'
 import { signIn } from '@/auth'
 import { createFirestoreNotificationEntry, NotificationData } from '@/lib/firebase'
 import { getTimeLeft } from '@/utils/commonUtils'
+import { revalidatePath } from 'next/cache'
 
 export type CapsuleCreateAction = {
   message: string
@@ -36,6 +37,8 @@ export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateA
     where: { id: capsule.id },
     data: { rootCapsuleId: capsule.id }
   })
+
+  revalidatePath('/dashboard')
 
   return { status: 'success' }
 }

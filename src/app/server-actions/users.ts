@@ -30,6 +30,7 @@ export const searchUserWithUserName = async (searchString: string) => {
       }
     },
     select: {
+      id: true,
       name: true,
       userName: true
     }

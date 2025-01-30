@@ -60,7 +60,7 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
 
   return (
     <Modal opened={opened} onClose={close} title='Create new future capsule'>
-      <form action={action} method='post'>
+      <form action={action}>
         <Textarea label='Capsule message' name='message' {...form.getInputProps('message')} />
         <input type='hidden' name='tzOffset' defaultValue={new Date().getTimezoneOffset().toString()} />
         <Flex gap={10}>

@@ -3,10 +3,16 @@ import CreateCapsule from '@/components/createCapsule'
 import ShowContactsButton from '@/components/ShowContactsButton'
 import SignoutButton from '@/components/signoutButton'
 import getUser from '@/lib/getUser'
-import React from 'react'
+import { prisma } from '@prisma-client'
+import React, { Suspense } from 'react'
 
 const Page = async () => {
   const user = await getUser()
+  const capsules = prisma.capsule.findMany({
+    where: { ownerId: user.id, status: { not: 'NOT_ACCEPTED' } },
+    include: { parentCapsule: { select: { owner: true } }, rootCapsule: { select: { owner: true } } },
+    orderBy: { scheduledTo: 'asc' }
+  })
   return (
     <div>
       <SignoutButton />
@@ -17,7 +23,9 @@ const Page = async () => {
       <p>{user.email}</p>
       <ShowContactsButton />
       <CreateCapsule />
-      <CapsulesGrid />
+      <Suspense fallback={<div>Loading Capsules...</div>}>
+        <CapsulesGrid capsulesPromise={capsules} />
+      </Suspense>
     </div>
   )
 }

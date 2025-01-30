@@ -1,15 +1,10 @@
-import getUser from '@/lib/getUser'
-import { prisma } from '@prisma-client'
-import React from 'react'
-import Capsule from './capsule'
+'use client'
+import React, { use } from 'react'
+import Capsule, { CapsuleData } from './capsule'
 
-const CapsulesGrid = async () => {
-  const user = await getUser()
-  const capsules = await prisma.capsule.findMany({
-    where: { ownerId: user.id },
-    include: { parentCapsule: { select: { owner: true } }, rootCapsule: { select: { owner: true } } },
-    orderBy: { scheduledTo: 'asc' }
-  })
+const CapsulesGrid = ({ capsulesPromise }: { capsulesPromise: Promise<CapsuleData[]> }) => {
+  const capsules = use(capsulesPromise)
+
   return (
     <div className='flex gap-3 flex-wrap'>
       {capsules.map((capsule) => (
