@@ -12,6 +12,20 @@ model User {
   userName String  @unique
   name     String?
   image    String?
+  nickname String?
+
+  timezone String?
+  locale   String  @default("en")
+
+  // Capsules related
+  minCapsuleDelay Int @default(1440) // in minutes (cant be less then 24 hours)
+  maxCapsuleDelay Int @default(0)
+
+  // Contacts related
+  automaticallyAddContactsWhenTheySentCapsule Boolean @default(true)
+  automaticallyAcceptCapsuleFromContacts      Boolean @default(true)
+  automaticallyAcceptCapsuleFromNonContacts   Boolean @default(false)
+  addToContactWhenAllowedToSendCapsules       Boolean @default(true)
 
   accounts Account[]
 

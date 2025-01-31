@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import React from 'react'
+import SideNavLink from './SideNavLink'
 
 const SettingsSidenav = () => {
   return (
@@ -7,16 +7,16 @@ const SettingsSidenav = () => {
       <h2>Profile</h2>
       <ul>
         <li>
-          <Link href='/settings/profile'>General</Link>
+          <SideNavLink href='/settings/profile'>General</SideNavLink>
         </li>
         <li>
-          <Link href='/settings/appearance'>Appearance</Link>
+          <SideNavLink href='/settings/appearance'>Appearance</SideNavLink>
         </li>
         <li>
-          <Link href='/settings/recipient-services'>Recipient services</Link>
+          <SideNavLink href='/settings/recipient-services'>Recipient services</SideNavLink>
         </li>
         <li>
-          <Link href='/settings/connected-users'>Connected users</Link>
+          <SideNavLink href='/settings/contacts'>Connected users</SideNavLink>
         </li>
       </ul>
     </div>
