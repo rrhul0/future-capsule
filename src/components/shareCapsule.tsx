@@ -11,7 +11,7 @@ const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: Capsul
   const [opened, { open, close }] = useDisclosure(false)
   const [sharingAccessState, setSharingAccess] = useState(sharingAccess)
 
-  const shareLink = (typeof window !== 'undefined' ? window?.location?.origin : '') + '/share-capsule-' + id
+  const shareLink = process.env.NEXT_PUBLIC_APP_URL + '/share-capsule-' + id
 
   const onChangeAccess = (value: string | null) => {
     if (value) {
