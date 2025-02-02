@@ -63,7 +63,7 @@ model UserRecipientService {
 
   usedByCapsules Capsule[] @relation("CapsuleRecipientService")
 
-  @@unique([userId, type, serviceValue])
+  @@unique([type, serviceValue])
   @@map("user_recipient_service")
 }
 
