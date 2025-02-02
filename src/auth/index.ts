@@ -88,13 +88,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
       // (or may with with another emailid)
       // attach this new user id to user's reciepint services
       if (user?.email && currentUserEmails.findIndex(({ serviceValue: email }) => email === user.email) === -1) {
-        await prisma.userRecipientService.create({
-          data: {
-            type: 'EMAIL',
-            serviceValue: user.email as string,
-            userId: currentUserId
-          }
-        })
+        try {
+          // will throw if email is linked to another user
+          await prisma.userRecipientService.create({
+            data: {
+              type: 'EMAIL',
+              serviceValue: user.email as string,
+              userId: currentUserId
+            }
+          })
+        } catch {
+          //email is linked to another user
+          return false
+        }
       }
       return true
     }
