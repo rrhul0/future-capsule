@@ -1,11 +1,14 @@
-import { addUsersToContactsList, searchUserWithUserName } from '@/app/server-actions/users'
+import { searchUserWithUserName } from '@/app/server-actions/users'
 import { Button, Modal, Popover, TextInput } from '@mantine/core'
 import React from 'react'
 import ContactCard from './ContactCard'
 import { useDisclosure } from '@mantine/hooks'
 import { useSession } from 'next-auth/react'
+import { useQueryClient } from '@tanstack/react-query'
+import { addUsersToContactsList } from '@/app/server-actions/userProfile'
 
 export type UserType = {
+  id: string
   userName: string
   name: string | null
 }
@@ -13,6 +16,7 @@ export type UserType = {
 const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () => void }) => {
   const [openedDropdown, { open: openDropdown, close: closeDropdown }] = useDisclosure(false)
   const session = useSession()
+  const queryClient = useQueryClient()
 
   const [searchResults, setSearchResults] = React.useState<UserType[]>([])
   const [selectedUsers, setSelectedUsers] = React.useState<UserType[]>([])
@@ -50,7 +54,6 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
         setSearchResults([])
         setSelectedUsers([])
       }}
-      className='relative'
     >
       <TextInput
         type='text'
@@ -68,7 +71,7 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
         position={'top'}
         styles={{
           dropdown: {
-            top: '50%',
+            // top: '50%',
             left: '50%',
             transform: 'translate(-50%, 0)'
           }
@@ -108,7 +111,10 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
       <Button
         variant='gradient'
         disabled={!selectedUsers.length}
-        onClick={() => addUsersToContactsList(selectedUsers.map((u) => u.userName))}
+        onClick={async () => {
+          const newContacts = await addUsersToContactsList(selectedUsers.map((u) => u.userName))
+          queryClient.setQueryData(['contacts'], newContacts)
+        }}
       >
         Add to contact list
       </Button>

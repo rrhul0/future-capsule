@@ -1,24 +1,36 @@
 import CapsulesGrid from '@/components/capsulesGrid'
 import CreateCapsule from '@/components/createCapsule'
 import ShowContactsButton from '@/components/ShowContactsButton'
-import SignoutButton from '@/components/signoutButton'
-import getUser from '@/lib/getUser'
-import React from 'react'
+import { getQueryClient } from '@/utils/reactQuery'
+import React, { Suspense } from 'react'
+import { getContacts } from '../server-actions/userProfile'
+import { getAllCapsules } from '../server-actions/capsule'
+import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 
 const Page = async () => {
-  const user = await getUser()
+  const queryClient = getQueryClient()
+
+  queryClient.prefetchQuery({
+    queryKey: ['contacts'],
+    queryFn: () => getContacts()
+  })
+
+  queryClient.prefetchQuery({
+    queryKey: ['capsules'],
+    queryFn: () => getAllCapsules()
+  })
+
   return (
-    <div>
-      <SignoutButton />
-      <h1>Dashboard Page</h1>
-      <h1>
-        Welcome {user.name} <span className='text-blue-600 italic'>@{user.userName}</span>
-      </h1>
-      <p>{user.email}</p>
-      <ShowContactsButton />
-      <CreateCapsule />
-      <CapsulesGrid />
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <div>
+        <h1>Dashboard Page</h1>
+        <ShowContactsButton />
+        <CreateCapsule />
+        <Suspense fallback={<div>Loading Capsules...</div>}>
+          <CapsulesGrid />
+        </Suspense>
+      </div>
+    </HydrationBoundary>
   )
 }
 

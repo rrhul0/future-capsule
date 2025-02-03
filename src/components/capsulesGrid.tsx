@@ -1,15 +1,15 @@
-import getUser from '@/lib/getUser'
-import { prisma } from '@prisma-client'
+'use client'
 import React from 'react'
 import Capsule from './capsule'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getAllCapsules } from '@/app/server-actions/capsule'
 
-const CapsulesGrid = async () => {
-  const user = await getUser()
-  const capsules = await prisma.capsule.findMany({
-    where: { ownerId: user.id },
-    include: { parentCapsule: { select: { owner: true } }, rootCapsule: { select: { owner: true } } },
-    orderBy: { scheduledTo: 'asc' }
+const CapsulesGrid = () => {
+  const { data: capsules } = useSuspenseQuery({
+    queryKey: ['capsules'],
+    queryFn: () => getAllCapsules()
   })
+
   return (
     <div className='flex gap-3 flex-wrap'>
       {capsules.map((capsule) => (

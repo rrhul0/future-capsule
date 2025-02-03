@@ -65,7 +65,7 @@ const AllNotifications = () => {
       }}
     >
       <Popover.Target>
-        <div className='w-fit'>Notifications</div>
+        <button className='w-fit'>Notifications</button>
       </Popover.Target>
       <Popover.Dropdown>
         <div>
@@ -74,7 +74,7 @@ const AllNotifications = () => {
               <NotificationCard notification={notification} key={notification.id} />
             ))}
           </div>
-          <Button onClick={onClickClearAll}>Clear all</Button>
+          {notifications.length ? <Button onClick={onClickClearAll}>Clear all</Button> : <div>No notifications</div>}
         </div>
       </Popover.Dropdown>
     </Popover>

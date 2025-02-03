@@ -2,13 +2,17 @@
 import { Button, Checkbox, Modal } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import React from 'react'
-import { useContactStore } from '@/store/contacts'
 import { shareCapsule } from '@/app/server-actions/capsule'
 import { toast } from 'react-toastify'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getContacts } from '@/app/server-actions/userProfile'
 
 const SelectUsersToShare = ({ capsuleId }: { capsuleId: string }) => {
   const [opened, { open, close }] = useDisclosure(false)
-  const { contacts } = useContactStore((state) => state)
+  const { data: contacts } = useSuspenseQuery({
+    queryKey: ['contacts'],
+    queryFn: () => getContacts()
+  })
 
   const onSubmitForm = (formData: FormData) => {
     toast.promise(shareCapsule({ capsuleId, userIds: (formData.getAll('usersToShare') as string[]) ?? [] }), {

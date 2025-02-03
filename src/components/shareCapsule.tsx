@@ -1,23 +1,25 @@
 'use client'
-import { changeSharingAccess } from '@/app/server-actions/capsule'
+import { CapsuleData, changeSharingAccess } from '@/app/server-actions/capsule'
 import { ActionIcon, Button, CopyButton, Modal, Select, Tooltip } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Check, Copy } from '@phosphor-icons/react'
 import { CapsuleSharingAccess } from '@prisma/client'
-import React, { useState } from 'react'
+import React from 'react'
 import SelectUsersToShare from './selectUsersToShare'
+import { useQueryClient } from '@tanstack/react-query'
 
 const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: CapsuleSharingAccess }) => {
   const [opened, { open, close }] = useDisclosure(false)
-  const [sharingAccessState, setSharingAccess] = useState(sharingAccess)
+  const queryClient = useQueryClient()
 
-  const shareLink = (typeof window !== 'undefined' ? window?.location?.origin : '') + '/share-capsule-' + id
+  const shareLink = process.env.NEXT_PUBLIC_APP_URL + '/share-capsule-' + id
 
-  const onChangeAccess = (value: string | null) => {
+  const onChangeAccess = async (value: string | null) => {
     if (value) {
-      changeSharingAccess(id, value as CapsuleSharingAccess).then((res) => {
-        if (res.status === 'success') setSharingAccess(res.newAccess)
-      })
+      const updatedCapsule = await changeSharingAccess(id, value as CapsuleSharingAccess)
+      queryClient.setQueryData(['capsules'], (oldCapsules: CapsuleData[] | null) =>
+        oldCapsules?.map((c) => (c.id === id ? updatedCapsule : c))
+      )
     }
   }
 
@@ -36,7 +38,7 @@ const ShareCapsule = ({ id, sharingAccess }: { id: string; sharingAccess: Capsul
             defaultValue={sharingAccess}
             onChange={onChangeAccess}
           />
-          {sharingAccessState !== 'NO_ONE' && <SelectUsersToShare capsuleId={id} />}
+          {sharingAccess !== 'NO_ONE' && <SelectUsersToShare capsuleId={id} />}
           <div className='flex gap-2 border border-gray-300 rounded-md py-0.5 px-2 bg-slate-600'>
             <div>{shareLink}</div>
             <CopyButton value={shareLink} timeout={2000}>

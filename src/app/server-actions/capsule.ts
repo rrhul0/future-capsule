@@ -3,10 +3,62 @@
 import { prisma } from '@prisma-client'
 import dayjs from 'dayjs'
 import getUser from '@/lib/getUser'
-import { CapsuleSharingAccess } from '@prisma/client'
+import { CapsuleSharingAccess, CapsuleStatus } from '@prisma/client'
 import { signIn } from '@/auth'
 import { createFirestoreNotificationEntry, NotificationData } from '@/lib/firebase'
 import { getTimeLeft } from '@/utils/commonUtils'
+import { createId } from '@paralleldrive/cuid2'
+
+const capsulesSelectData = {
+  id: true,
+  content: true,
+  scheduledTo: true,
+  status: true,
+  sharingAccess: true,
+  ownerId: true,
+  parentCapsule: {
+    select: {
+      owner: {
+        select: {
+          id: true,
+          userName: true,
+          name: true
+        }
+      }
+    }
+  },
+  rootCapsule: {
+    select: {
+      owner: {
+        select: {
+          id: true,
+          userName: true,
+          name: true
+        }
+      }
+    }
+  }
+}
+
+export type CapsuleData = {
+  id: string
+  content: string
+  scheduledTo: Date
+  status: CapsuleStatus
+  sharingAccess: CapsuleSharingAccess
+  ownerId: string
+  parentCapsule: { owner: { name: string|null; userName: string; id: string } } | null
+  rootCapsule: { owner: { name: string|null; userName: string; id: string } }
+}
+
+export const getAllCapsules = async () => {
+  const user = await getUser()
+  return prisma.capsule.findMany({
+    where: { ownerId: user.id, status: { not: 'NOT_ACCEPTED' } },
+    orderBy: { scheduledTo: 'asc' },
+    select: capsulesSelectData
+  })
+}
 
 export type CapsuleCreateAction = {
   message: string
@@ -20,24 +72,22 @@ export const createCapsuleAction = async ({ message, timestamp }: CapsuleCreateA
 
   const diffInDays = dayjs(timestamp).diff(dayjs(), 'day', true)
   if (diffInDays < 1) {
-    return { error: 'Capsule must be scheduled at least 24 hours in the future' }
+    throw new Error('Capsule must be scheduled at least 24 hours in the future')
   }
-
+  const cuidCapsule = createId()
   const capsule = await prisma.capsule.create({
     data: {
+      id: cuidCapsule,
       content: message,
       scheduledTo: new Date(timestamp),
       status: 'PENDING',
-      ownerId: user.id
-    }
+      ownerId: user.id,
+      rootCapsuleId: cuidCapsule
+    },
+    select: capsulesSelectData
   })
 
-  await prisma.capsule.update({
-    where: { id: capsule.id },
-    data: { rootCapsuleId: capsule.id }
-  })
-
-  return { status: 'success' }
+  return capsule
 }
 
 export const changeSharingAccess = async (capsuleId: string, sharingAccess: CapsuleSharingAccess) => {
@@ -45,14 +95,15 @@ export const changeSharingAccess = async (capsuleId: string, sharingAccess: Caps
 
   const capsule = await prisma.capsule.update({
     where: { id: capsuleId, ownerId: user.id },
-    data: { sharingAccess: sharingAccess }
+    data: { sharingAccess: sharingAccess },
+    select: capsulesSelectData
   })
 
   if (!capsule) {
-    return { error: 'You do not have permission to change sharing access or capsule not found' }
+    throw new Error('You do not have permission to change sharing access or capsule not found')
   }
 
-  return { status: 'success', newAccess: sharingAccess }
+  return capsule
 }
 
 export const shareCapsule = async ({

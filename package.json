@@ -22,8 +22,10 @@
     "@mantine/form": "^7.16.1",
     "@mantine/hooks": "^7.16.1",
     "@mantine/notifications": "^7.16.2",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@phosphor-icons/react": "^2.1.7",
-    "@prisma/client": "^6.2.1",
+    "@prisma/client": "6.3.0",
+    "@tanstack/react-query": "^5.65.1",
     "bullmq": "^5.35.1",
     "dayjs": "^1.11.13",
     "firebase": "^11.2.0",
@@ -32,8 +34,7 @@
     "nodemailer": "^6.10.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-toastify": "^11.0.3",
-    "zustand": "^5.0.3"
+    "react-toastify": "^11.0.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -46,7 +47,7 @@
     "postcss": "^8.5.1",
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.1",
-    "prisma": "^6.2.1",
+    "prisma": "^6.3.0",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
