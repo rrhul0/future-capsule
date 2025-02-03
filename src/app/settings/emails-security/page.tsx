@@ -1,4 +1,5 @@
 import { getUserRecipients } from '@/app/server-actions/userProfile'
+import ConnectAnotherAccount from '@/components/settings/ConnectAnotherAccount'
 import RecipientServicesList from '@/components/settings/RecipientServicesList'
 import { getQueryClient } from '@/utils/reactQuery'
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
@@ -12,7 +13,10 @@ const RecipientServices = () => {
   })
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <RecipientServicesList />
+      <div>
+        <ConnectAnotherAccount />
+        <RecipientServicesList />
+      </div>
     </HydrationBoundary>
   )
 }
