@@ -2,7 +2,7 @@ import NextAuth from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import Google from 'next-auth/providers/google'
 import Gitlab from 'next-auth/providers/gitlab'
-import { PrismaAdapter } from './adapter'
+import { createAccount, linkAccount, PrismaAdapter } from './adapter'
 import { prisma } from '@prisma-client'
 import { getToken } from 'next-auth/jwt'
 
@@ -40,6 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
       clientId: process.env.GITLAB_ID!,
       clientSecret: process.env.GITLAB_SECRET!,
       profile(profile) {
+        console.log(profile)
         return {
           id: profile.id.toString(),
           name: profile.name,
@@ -55,6 +56,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
     strategy: 'jwt'
   },
   adapter: PrismaAdapter(prisma),
+  events: {},
+
   callbacks: {
     authorized: async ({ auth, request }) => {
       if (request.nextUrl.pathname === '/' || request.nextUrl.pathname.includes('/share/capsule')) return true
@@ -72,35 +75,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
       session.user.userName = token.userName
       return session
     },
-    async signIn({ user }) {
+    async signIn({ user, account, profile }) {
+      console.dir({ user, account, profile })
+      if (!account) return false
       const token = await getToken({ req: req as Request, secret: process.env.AUTH_SECRET })
       if (!token || !token?.id) {
         // no user is logged in
+        try {
+          const createdUser = await createAccount({ name: user?.name, image: user?.image, userName: user.userName })
+          if (createdUser && account) await linkAccount(account, createdUser.id, user.email as string)
+        } catch {
+          // user already in the db
+          return true
+        }
         return true
       }
       // a user is already logged in and trying to bind more accounts
       const currentUserId = token.id
-      const currentUserEmails = await prisma.userRecipientService.findMany({
-        where: { userId: currentUserId, type: 'EMAIL' },
-        select: { serviceValue: true }
-      })
-      // means a logged in user tring to login with another provider
-      // (or may with with another emailid)
-      // attach this new user id to user's reciepint services
-      if (user?.email && currentUserEmails.findIndex(({ serviceValue: email }) => email === user.email) === -1) {
-        try {
-          // will throw if email is linked to another user
-          await prisma.userRecipientService.create({
-            data: {
-              type: 'EMAIL',
-              serviceValue: user.email as string,
-              userId: currentUserId
-            }
-          })
-        } catch {
-          //email is linked to another user
-          return false
-        }
+      // #Cases
+      // 1. email id is linked to current user
+      //    1. user is trying to login with same provider which is already present
+      //          does not have to do anything in this case
+      //    2. user is trying to login with another provider
+      //          link the new provider account to user
+
+      // 2. email id not have linked to any account
+      //      link email and provider account to current user
+
+      // 3. email id of provider is linked to another user
+      //      show error
+
+      try {
+        linkAccount(account, currentUserId, user.email as string)
+      } catch {
+        return false
       }
       return true
     }

@@ -1,36 +1,11 @@
 import { type PrismaClient } from '@prisma/client'
 import type { Adapter, AdapterAccount } from '@auth/core/adapters'
+import { prisma } from '@prisma-client'
+import { Account } from 'next-auth'
 
 export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$extends']>): Adapter {
   const p = prisma as PrismaClient
   return {
-    createUser: async (data) => {
-      const user = await p.user.create({
-        data: {
-          name: data.name,
-          image: data.image,
-          userName: data.userName,
-          recipientServices: {
-            create: {
-              type: 'EMAIL',
-              serviceValue: data.email
-            }
-          }
-        },
-        include: {
-          recipientServices: {
-            where: {
-              type: 'EMAIL'
-            }
-          }
-        }
-      })
-      return {
-        ...user,
-        email: user.recipientServices[0].serviceValue,
-        emailVerified: user.recipientServices[0].createdAt
-      }
-    },
     getUser: async (id) => {
       const user = await p.user.findUnique({ where: { id } })
       if (!user) return null
@@ -61,9 +36,9 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
       const account = await p.account.findUnique({
         where: { provider_providerAccountId },
         include: {
-          user: {
+          connectedRecipientService: {
             include: {
-              recipientServices: true
+              user: true
             }
           }
         }
@@ -71,9 +46,9 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
       if (!account) return null
 
       return {
-        ...account?.user,
-        email: account?.user.recipientServices[0]?.serviceValue,
-        emailVerified: account?.user.recipientServices[0]?.createdAt
+        ...account.connectedRecipientService.user,
+        email: account?.connectedRecipientService?.serviceValue,
+        emailVerified: account?.connectedRecipientService.createdAt
       }
     },
     deleteUser: async (id) => {
@@ -85,7 +60,17 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
         emailVerified: user.recipientServices[0].createdAt
       }
     },
-    linkAccount: (data) => p.account.create({ data }) as unknown as AdapterAccount,
+    linkAccount: async (data) => {
+      console.log('link account', data)
+      return p.account.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: data.provider,
+            providerAccountId: data.providerAccountId
+          }
+        }
+      }) as unknown as AdapterAccount
+    },
     unlinkAccount: (provider_providerAccountId) =>
       p.account.delete({
         where: { provider_providerAccountId }
@@ -95,5 +80,98 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
         where: { providerAccountId, provider }
       }) as Promise<AdapterAccount | null>
     }
+  }
+}
+
+// function decodeJWT(token: string) {
+//   const [header, payload, signature] = token.split('.')
+//   const decodedHeader = Buffer.from(header, 'base64').toString('utf8')
+//   const decodedPayload = Buffer.from(payload, 'base64').toString('utf8')
+
+//   return {
+//     header: JSON.parse(decodedHeader),
+//     payload: JSON.parse(decodedPayload),
+//     signature
+//   }
+// }
+
+export async function linkAccount(data: Account, userId: string, emailId: string) {
+  console.log('my link account', data)
+  const userRecipientService = await prisma.userRecipientService.upsert({
+    where: { userId: userId, type_serviceValue: { type: 'EMAIL', serviceValue: emailId } },
+    create: {
+      type: 'EMAIL',
+      serviceValue: emailId,
+      connectedByAccount: {
+        create: {
+          provider: data.provider,
+          providerAccountId: data.providerAccountId,
+          type: data.type,
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          token_type: data.token_type,
+          scope: data.scope,
+          expires_at: data.expires_at,
+          id_token: data.id_token,
+          session_state: data.session_state?.toString()
+        }
+      },
+      userId: userId
+    },
+    update: {
+      connectedByAccount: {
+        connectOrCreate: {
+          where: {
+            provider_providerAccountId: {
+              provider: data.provider,
+              providerAccountId: data.providerAccountId
+            }
+          },
+          create: {
+            provider: data.provider,
+            providerAccountId: data.providerAccountId,
+            type: data.type,
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            token_type: data.token_type,
+            scope: data.scope,
+            expires_at: data.expires_at,
+            id_token: data.id_token,
+            session_state: data.session_state?.toString()
+          }
+        }
+      }
+    },
+    include: {
+      connectedByAccount: {
+        where: {
+          provider: data.provider,
+          providerAccountId: data.providerAccountId
+        }
+      }
+    }
+  })
+  return userRecipientService.connectedByAccount[0] as unknown as AdapterAccount
+}
+
+export async function createAccount(data: { name?: string | null; image?: string | null; userName: string }) {
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      image: data.image,
+      userName: data.userName
+    },
+    include: {
+      recipientServices: {
+        where: {
+          type: 'EMAIL'
+        }
+      }
+    }
+  })
+  return {
+    ...user,
+    email: user.recipientServices[0]?.serviceValue,
+    emailVerified: user.recipientServices[0]?.createdAt
   }
 }

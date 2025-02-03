@@ -27,8 +27,6 @@ model User {
   automaticallyAcceptCapsuleFromNonContacts   Boolean @default(false)
   addToContactWhenAllowedToSendCapsules       Boolean @default(true)
 
-  accounts Account[]
-
   Contacts    User[] @relation("UserContactRelation")
   ContactedBy User[] @relation("UserContactRelation")
 
@@ -62,6 +60,8 @@ model UserRecipientService {
   updatedAt DateTime @updatedAt
 
   usedByCapsules Capsule[] @relation("CapsuleRecipientService")
+
+  connectedByAccount Account[] @relation("ConnectedAccountRecipientService")
 
   @@unique([type, serviceValue])
   @@map("user_recipient_service")
@@ -118,7 +118,6 @@ enum CapsuleSharingAccess {
 }
 
 model Account {
-  userId            String
   type              String
   provider          String
   providerAccountId String
@@ -133,7 +132,8 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectedRecipientService UserRecipientService @relation("ConnectedAccountRecipientService", fields: [userRecipientServiceId], references: [id])
+  userRecipientServiceId    String
 
   @@id([provider, providerAccountId])
   @@map("accounts")
