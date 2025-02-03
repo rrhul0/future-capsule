@@ -40,7 +40,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
       clientId: process.env.GITLAB_ID!,
       clientSecret: process.env.GITLAB_SECRET!,
       profile(profile) {
-        console.log(profile)
         return {
           id: profile.id.toString(),
           name: profile.name,
@@ -56,8 +55,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
     strategy: 'jwt'
   },
   adapter: PrismaAdapter(prisma),
-  events: {},
-
   callbacks: {
     authorized: async ({ auth, request }) => {
       if (request.nextUrl.pathname === '/' || request.nextUrl.pathname.includes('/share/capsule')) return true
@@ -75,8 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req) => ({
       session.user.userName = token.userName
       return session
     },
-    async signIn({ user, account, profile }) {
-      console.dir({ user, account, profile })
+    async signIn({ user, account }) {
       if (!account) return false
       const token = await getToken({ req: req as Request, secret: process.env.AUTH_SECRET })
       if (!token || !token?.id) {

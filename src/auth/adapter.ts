@@ -83,18 +83,6 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
   }
 }
 
-// function decodeJWT(token: string) {
-//   const [header, payload, signature] = token.split('.')
-//   const decodedHeader = Buffer.from(header, 'base64').toString('utf8')
-//   const decodedPayload = Buffer.from(payload, 'base64').toString('utf8')
-
-//   return {
-//     header: JSON.parse(decodedHeader),
-//     payload: JSON.parse(decodedPayload),
-//     signature
-//   }
-// }
-
 export async function linkAccount(data: Account, userId: string, emailId: string) {
   console.log('my link account', data)
   const userRecipientService = await prisma.userRecipientService.upsert({

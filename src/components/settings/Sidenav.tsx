@@ -13,7 +13,7 @@ const SettingsSidenav = () => {
           <SideNavLink href='/settings/appearance'>Appearance</SideNavLink>
         </li>
         <li>
-          <SideNavLink href='/settings/recipient-services'>Recipient services</SideNavLink>
+          <SideNavLink href='/settings/emails-security'>Recipient services</SideNavLink>
         </li>
         <li>
           <SideNavLink href='/settings/contacts'>Connected users</SideNavLink>

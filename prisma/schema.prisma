@@ -132,7 +132,7 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  connectedRecipientService UserRecipientService @relation("ConnectedAccountRecipientService", fields: [userRecipientServiceId], references: [id])
+  connectedRecipientService UserRecipientService @relation("ConnectedAccountRecipientService", fields: [userRecipientServiceId], references: [id], onDelete: Cascade)
   userRecipientServiceId    String
 
   @@id([provider, providerAccountId])

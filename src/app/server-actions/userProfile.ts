@@ -89,3 +89,57 @@ export const updateCapsulesConfiguration = async (data: CapsulesConfigurationTyp
   })
   return updatedUser
 }
+
+export const getUserRecipients = async () => {
+  const user = await getUser()
+  if (!user) throw new Error('User not found')
+  const recipients = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      recipientServices: {
+        select: {
+          id: true,
+          serviceValue: true,
+          type: true,
+          connectedByAccount: {
+            select: {
+              type: true,
+              providerAccountId: true,
+              provider: true
+            }
+          }
+        }
+      }
+    }
+  })
+  if (!recipients) throw new Error('User reciepients not found')
+  return recipients?.recipientServices
+}
+
+export const disconnectRecipient = async (id: string) => {
+  const user = await getUser()
+  if (!user) throw new Error('User not found')
+  const recipient = await prisma.userRecipientService.delete({
+    where: { id, userId: user.id }
+  })
+  if (!recipient) throw new Error('Recipient was not found')
+  const leftRecipients = getUserRecipients()
+  return leftRecipients
+}
+
+export const disconnectAccount = async (serviceId: string, accountId: string, provider: string) => {
+  const user = await getUser()
+  if (!user) throw new Error('User not found')
+  const account = await prisma.account.delete({
+    where: {
+      provider_providerAccountId: {
+        providerAccountId: accountId,
+        provider
+      },
+      userRecipientServiceId: serviceId
+    }
+  })
+  if (!account) throw new Error('Account was not found')
+  const leftRecipients = getUserRecipients()
+  return leftRecipients
+}

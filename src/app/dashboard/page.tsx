@@ -1,7 +1,6 @@
 import CapsulesGrid from '@/components/capsulesGrid'
 import CreateCapsule from '@/components/createCapsule'
 import ShowContactsButton from '@/components/ShowContactsButton'
-import SignoutButton from '@/components/signoutButton'
 import getUser from '@/lib/getUser'
 import { prisma } from '@prisma-client'
 import React, { Suspense } from 'react'
@@ -15,7 +14,6 @@ const Page = async () => {
   })
   return (
     <div>
-      <SignoutButton />
       <h1>Dashboard Page</h1>
       <h1>
         Welcome {user.name} <span className='text-blue-600 italic'>@{user.userName}</span>
