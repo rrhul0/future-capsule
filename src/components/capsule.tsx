@@ -1,15 +1,13 @@
 'use client'
 import React from 'react'
-import type { Capsule as CapsuleType, User } from '@prisma/client'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import { getTimeLeft } from '@/utils/commonUtils'
 import ShareCapsule from './shareCapsule'
 import { useSession } from 'next-auth/react'
+import { CapsuleData } from '@/app/server-actions/capsule'
 
 dayjs.extend(duration)
-export type CapsuleData = CapsuleType & { rootCapsule: { owner: User } | null; parentCapsule: { owner: User } | null }
-
 const Capsule = ({ capsule }: { capsule: CapsuleData }) => {
   const { data: sessionData } = useSession()
   const isLocked = capsule.status !== 'SENT'

@@ -1,9 +1,14 @@
 'use client'
-import React, { use } from 'react'
-import Capsule, { CapsuleData } from './capsule'
+import React from 'react'
+import Capsule from './capsule'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getAllCapsules } from '@/app/server-actions/capsule'
 
-const CapsulesGrid = ({ capsulesPromise }: { capsulesPromise: Promise<CapsuleData[]> }) => {
-  const capsules = use(capsulesPromise)
+const CapsulesGrid = () => {
+  const { data: capsules } = useSuspenseQuery({
+    queryKey: ['capsules'],
+    queryFn: () => getAllCapsules()
+  })
 
   return (
     <div className='flex gap-3 flex-wrap'>

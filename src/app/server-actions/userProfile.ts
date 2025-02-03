@@ -143,3 +143,54 @@ export const disconnectAccount = async (serviceId: string, accountId: string, pr
   const leftRecipients = getUserRecipients()
   return leftRecipients
 }
+
+export const getContacts = async () => {
+  const user = await getUser()
+  if (!user) throw new Error('User not found')
+  const contacts = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      Contacts: {
+        select: {
+          id: true,
+          name: true,
+          userName: true
+        }
+      }
+    }
+  })
+  if (!contacts) throw new Error('Contacts not found')
+  return contacts.Contacts
+}
+
+export const addUsersToContactsList = async (usernames: string[]) => {
+  if (usernames.length === 0) {
+    throw new Error('No usernames provided')
+  }
+  const userAuth = await getUser()
+  if (!userAuth) throw new Error('User not found')
+  try {
+    const contacts = await prisma.user.update({
+      where: {
+        id: userAuth.id
+      },
+      data: {
+        Contacts: {
+          connect: usernames.map((u) => ({ userName: u }))
+        }
+      },
+      select: {
+        Contacts: {
+          select: {
+            id: true,
+            name: true,
+            userName: true
+          }
+        }
+      }
+    })
+    return contacts.Contacts
+  } catch {
+    throw new Error('Failed to add users to contacts list')
+  }
+}

@@ -1,10 +1,11 @@
-import { addUsersToContactsList, searchUserWithUserName } from '@/app/server-actions/users'
+import { searchUserWithUserName } from '@/app/server-actions/users'
 import { Button, Modal, Popover, TextInput } from '@mantine/core'
 import React from 'react'
 import ContactCard from './ContactCard'
 import { useDisclosure } from '@mantine/hooks'
 import { useSession } from 'next-auth/react'
-import { useContactStore } from '@/store/contacts'
+import { useQueryClient } from '@tanstack/react-query'
+import { addUsersToContactsList } from '@/app/server-actions/userProfile'
 
 export type UserType = {
   id: string
@@ -15,7 +16,7 @@ export type UserType = {
 const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () => void }) => {
   const [openedDropdown, { open: openDropdown, close: closeDropdown }] = useDisclosure(false)
   const session = useSession()
-  const { addNewContacts } = useContactStore((state) => state)
+  const queryClient = useQueryClient()
 
   const [searchResults, setSearchResults] = React.useState<UserType[]>([])
   const [selectedUsers, setSelectedUsers] = React.useState<UserType[]>([])
@@ -111,12 +112,8 @@ const AddNewContactFormModal = ({ opened, close }: { opened: boolean; close: () 
         variant='gradient'
         disabled={!selectedUsers.length}
         onClick={async () => {
-          try {
-            await addUsersToContactsList(selectedUsers.map((u) => u.userName))
-          } catch {
-            return
-          }
-          addNewContacts(selectedUsers)
+          const newContacts = await addUsersToContactsList(selectedUsers.map((u) => u.userName))
+          queryClient.setQueryData(['contacts'], newContacts)
         }}
       >
         Add to contact list

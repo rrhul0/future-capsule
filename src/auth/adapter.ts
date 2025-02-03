@@ -84,7 +84,6 @@ export function PrismaAdapter(prisma: PrismaClient | ReturnType<PrismaClient['$e
 }
 
 export async function linkAccount(data: Account, userId: string, emailId: string) {
-  console.log('my link account', data)
   const userRecipientService = await prisma.userRecipientService.upsert({
     where: { userId: userId, type_serviceValue: { type: 'EMAIL', serviceValue: emailId } },
     create: {

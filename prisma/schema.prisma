@@ -86,8 +86,8 @@ model Capsule {
   parentCapsule   Capsule?  @relation("CapsuleToCapsule", fields: [parentCapsuleId], references: [id])
   childCapsules   Capsule[] @relation("CapsuleToCapsule")
 
-  rootCapsuleId     String?
-  rootCapsule       Capsule?  @relation("RootCapsuleToCapsule", fields: [rootCapsuleId], references: [id])
+  rootCapsuleId     String
+  rootCapsule       Capsule   @relation("RootCapsuleToCapsule", fields: [rootCapsuleId], references: [id])
   rootChildCapsules Capsule[] @relation("RootCapsuleToCapsule")
 
   createdAt DateTime @default(now())

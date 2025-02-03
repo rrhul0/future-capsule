@@ -37,25 +37,3 @@ export const searchUserWithUserName = async (searchString: string) => {
   })
   return user
 }
-
-export const addUsersToContactsList = async (usernames: string[]): Promise<ActionReturnData> => {
-  if (usernames.length === 0) {
-    return { status: 'failed', error: 'No users to add' }
-  }
-  const userAuth = await getUser()
-  try {
-    await prisma.user.update({
-      where: {
-        id: userAuth.id
-      },
-      data: {
-        Contacts: {
-          connect: usernames.map((u) => ({ userName: u }))
-        }
-      }
-    })
-  } catch {
-    return { status: 'failed', error: 'something went wrong' }
-  }
-  return { status: 'success' }
-}

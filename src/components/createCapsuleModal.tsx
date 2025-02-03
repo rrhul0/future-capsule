@@ -1,5 +1,5 @@
 import { Modal, Button, Textarea, Flex } from '@mantine/core'
-import { createCapsuleAction } from '@/app/server-actions/capsule'
+import { CapsuleData, createCapsuleAction } from '@/app/server-actions/capsule'
 import { DateInput, DateValue, TimeInput } from '@mantine/dates'
 import { useState } from 'react'
 import dayjs from 'dayjs'
@@ -7,6 +7,7 @@ import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import duration from 'dayjs/plugin/duration'
 import { useForm } from '@mantine/form'
+import { useQueryClient } from '@tanstack/react-query'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -32,6 +33,8 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
     }
   })
 
+  const queryClient = useQueryClient()
+
   const [minTime, setMinTime] = useState<string | undefined>(undefined)
 
   const onDateChange = (date: DateValue) => {
@@ -48,13 +51,15 @@ const CreateCapsuleModal = ({ opened, close }: { opened: boolean; close: () => v
     }
   }
 
-  const action = () => {
+  const action = async () => {
     form.validate()
     if (form.isValid()) {
       const { openDate, openTime, message } = form.getValues()
       const date = dayjs(openDate).tz('UTC').format('YYYY-MM-DD')
       const openTimeStamp = dayjs.tz(`${date} ${openTime}`).tz('UTC').format('YYYY-MM-DDTHH:mm:ss')
-      createCapsuleAction({ message, timestamp: openTimeStamp }).then(close)
+      const newCapsule = await createCapsuleAction({ message, timestamp: openTimeStamp })
+      queryClient.setQueryData(['capsules'], (oldCapsules: CapsuleData[]) => [newCapsule, ...oldCapsules])
+      close()
     }
   }
 
