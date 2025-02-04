@@ -13,7 +13,7 @@ ENV DATABASE_URL=${DATABASE_URL}
 
 # Check if the database is available
 RUN for i in {1..10}; do \
-      if pg_isready -h localhost -p 5432; then \
+      if pg_isready -d ${DATABASE_URL}; then \
         echo "Database is available"; \
         break; \
       fi; \

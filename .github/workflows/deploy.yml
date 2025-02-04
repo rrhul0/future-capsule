@@ -34,15 +34,15 @@ jobs:
           sudo apt-get install -y postgresql-client
 
           # Test if database is available using pg_isready
+          echo "DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule" >> $GITHUB_ENV
           for i in {1..10}; do
-          if pg_isready -h localhost -p 5432; then
+          if pg_isready -d ${{ env.DATABASE_URL }}; then
             echo "Database is available"
             break
           fi
           echo "Waiting for database to be available..."
           sleep 5
           done
-          echo "DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule" >> $GITHUB_ENV
 
       - name: Build and Push Docker Image
         run: |
