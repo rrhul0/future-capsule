@@ -1,6 +1,7 @@
 # Use the official Node.js image as the base image
 FROM node:20
 
+ENV NODE_ENV=production
 # Set the working directory
 WORKDIR /app
 
@@ -10,6 +11,8 @@ RUN apt-get update && apt-get install -y postgresql-client
 # Accept build argument for DATABASE_URL
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
+
+RUN echo "DATABASE_URL=${DATABASE_URL}"
 
 # Check if the database is available
 RUN for i in {1..10}; do \
