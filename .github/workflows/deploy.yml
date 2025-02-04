@@ -29,9 +29,13 @@ jobs:
           DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
           echo "Creating SSH tunnel to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }} with database port $DATABASE_PORT"
           ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
-          # Test if database is available
+          # Install PostgreSQL client to use pg_isready
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+          # Test if database is available using pg_isready
           for i in {1..10}; do
-          if nc -z localhost 5432; then
+          if pg_isready -h localhost -p 5432; then
             echo "Database is available"
             break
           fi
@@ -42,15 +46,6 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          # Test if database is available
-          for i in {1..10}; do
-          if nc -z localhost 5432; then
-            echo "Database is available"
-            break
-          fi
-          echo "Waiting for database to be available..."
-          sleep 5
-          done
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
