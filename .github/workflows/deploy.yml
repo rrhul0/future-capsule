@@ -27,7 +27,7 @@ jobs:
           echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
-          ssh -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST -p $VPS_SSH_PORT
+          ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p $VPS_SSH_PORT $VPS_USER@$VPS_HOST 
           DATABASE_URL="postgresql://postgres:$POSTGRES_PASSWORD@localhost:5432/future-capsule"
 
       - name: Build and Push Docker Image
