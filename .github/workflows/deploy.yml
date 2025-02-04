@@ -43,16 +43,16 @@ jobs:
           echo "Waiting for database to be available..."
           sleep 5
           done
+
+      - name: Build and Push Docker Image
+        run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          docker build --build-arg DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+          docker build --network host --build-arg DATABASE_URL=$DATABASE_URL -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
           docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-
-      # - name: Build and Push Docker Image
-      #   run: |
-      # env:
-      #   DATABASE_URL: ${{ env.DATABASE_URL }}
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
   deploy:
     needs: build
