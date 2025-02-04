@@ -21,6 +21,14 @@ jobs:
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
+      - name: create ssh tunnel
+        run: |
+          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
+          ssh -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa $VPS_USER@$VPS_HOST -p $VPS_SSH_PORT
+          DATABASE_URL="postgresql://postgres:$POSTGRES_PASSWORD@localhost:5432/future-capsule"
+
       - name: Build and Push Docker Image
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
