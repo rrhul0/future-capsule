@@ -24,11 +24,11 @@ jobs:
       - name: create ssh tunnel
         run: |
           mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
-          echo "Creating SSH tunnel to $VPS_HOST:$VPS_SSH_PORT with database port $DATABASE_PORT"
-          ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p $VPS_SSH_PORT $VPS_USER@$VPS_HOST 
+          echo "Creating SSH tunnel to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }} with database port $DATABASE_PORT"
+          ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 
           DATABASE_URL="postgresql://postgres:$POSTGRES_PASSWORD@localhost:5432/future-capsule"
 
       - name: Build and Push Docker Image
