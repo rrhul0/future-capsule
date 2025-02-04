@@ -57,12 +57,12 @@ jobs:
 
   deploy:
     needs: build
+    permissions:
+      contents: read
     runs-on: self-hosted
 
     steps:
       - name: Deploy Application
-        permissions:
-          contents: read
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
