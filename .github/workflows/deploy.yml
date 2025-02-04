@@ -23,6 +23,7 @@ jobs:
 
       - name: create ssh tunnel
         run: |
+          mkdir -p ~/.ssh
           echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
