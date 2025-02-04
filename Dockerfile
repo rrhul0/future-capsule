@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy package.json and yarn.lock files
 COPY package.json yarn.lock ./
 
+# copy prisma schema
+COPY prisma ./prisma
+
 # Install dependencies
 RUN yarn install
 
@@ -20,4 +23,4 @@ RUN yarn build
 EXPOSE 3000
 
 # Start the Next.js application
-CMD ["npm", "start"]
+CMD ["yarn", "start"]
