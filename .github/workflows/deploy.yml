@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: rrhul0/future-capsule
+  IMAGE_NAME: Rrhul0/future-capsule
 
 jobs:
   build:
