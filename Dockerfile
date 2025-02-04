@@ -16,6 +16,10 @@ RUN yarn install
 # Copy the rest of the application code
 COPY . .
 
+# Accept build argument for DATABASE_URL
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Build the Next.js application
 RUN yarn build
 
