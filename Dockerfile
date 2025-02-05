@@ -60,12 +60,11 @@ ENV NODE_ENV=production
 # Copy the rest of the application code
 COPY . .
 
-# # Accept build argument for DATABASE_URL
-# ARG DATABASE_URL
-# ENV DATABASE_URL=${DATABASE_URL}
+# Enable SSH forwarding in the build
+RUN mkdir -p ~/.ssh && chmod 0700 ~/.ssh
 
 # Build the Next.js application
-RUN yarn build
+RUN --mount=type=ssh yarn build
 
 # Expose the port the app runs on
 EXPOSE 3000
