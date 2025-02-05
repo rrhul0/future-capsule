@@ -6,10 +6,6 @@ on:
       - main
       - '**' # All branches for preview deployment
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: future-capsule
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -90,11 +86,9 @@ jobs:
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-      - name: Debug Environment Variables
-        run: |
-          echo "REGISTRY=$REGISTRY"
-          echo "GITHUB_ACTOR=$GITHUB_ACTOR"
-          echo "IMAGE_NAME=$IMAGE_NAME"
+          echo "REGISTRY=ghcr.io" >> $GITHUB_ENV
+          echo "GITHUB_ACTOR=$GITHUB_ACTOR" >> $GITHUB_ENV
+          echo "IMAGE_NAME=future-capsule" >> $GITHUB_ENV
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
@@ -102,7 +96,7 @@ jobs:
           context: .
           push: true
           network: host
-          tags: $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:${{ env.IMAGE_TAG }}
+          tags: ${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
             REDIS_URL=${{ env.REDIS_URL }}
