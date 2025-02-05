@@ -56,30 +56,52 @@ jobs:
 
       - name: Set up environment variables
         run: |
-          DATABASE_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.DATABASE_URL_PROD }} || echo ${{ env.DATABASE_URL_PREVIEW }})
-          REDIS_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.REDIS_URL_PROD }} || echo ${{ env.REDIS_URL_PREVIEW }})
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          REDIS_URL=${{ env.REDIS_URL }}
           AUTH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.AUTH_SECRET_PROD }} || echo ${{ secrets.AUTH_SECRET_PREVIEW }})
           TZ=${{ env.TZ }}
-          GITHUB_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GITHUB_ID_PROD }} || echo ${{ env.GITHUB_ID_PREVIEW }})
+          GH_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GH_ID_PROD }} || echo ${{ env.GH_ID_PREVIEW }})
           GOOGLE_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GOOGLE_ID_PROD }} || echo ${{ env.GOOGLE_ID_PREVIEW }})
           GITLAB_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GITLAB_ID_PROD }} || echo ${{ env.GITLAB_ID_PREVIEW }})
-          GITHUB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITHUB_SECRET_PROD }} || echo ${{ secrets.GITHUB_SECRET_PREVIEW }})
+          GH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GH_SECRET_PROD }} || echo ${{ secrets.GH_SECRET_PREVIEW }})
           GOOGLE_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GOOGLE_SECRET_PROD }} || echo ${{ secrets.GOOGLE_SECRET_PREVIEW }})
           GITLAB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITLAB_SECRET_PROD }} || echo ${{ secrets.GITLAB_SECRET_PREVIEW }})
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
-          NEXT_PUBLIC_FIREBASE_API_KEY=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_API_KEY_PROD }} || echo ${{ secrets.FIREBASE_API_KEY_PREVIEW }})
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_AUTH_DOMAIN_PROD }} || echo ${{ secrets.FIREBASE_AUTH_DOMAIN_PREVIEW }})
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_PROJECT_ID_PROD }} || echo ${{ secrets.FIREBASE_PROJECT_ID_PREVIEW }})
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_STORAGE_BUCKET_PROD }} || echo ${{ secrets.FIREBASE_STORAGE_BUCKET_PREVIEW }})
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_PROD }} || echo ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_PREVIEW }})
-          NEXT_PUBLIC_FIREBASE_APP_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_APP_ID_PROD }} || echo ${{ secrets.FIREBASE_APP_ID_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.FIREBASE_APP_ID_PROD }} || echo ${{ env.FIREBASE_APP_ID_PREVIEW }})
+          BREVO_USER=${{ secrets.BREVO_USER }}
+          BREVO_PASS=${{ secrets.BREVO_PASS }}
+
+          echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+          echo "REDIS_URL=$REDIS_URL" >> $GITHUB_ENV
+          echo "AUTH_SECRET=$AUTH_SECRET" >> $GITHUB_ENV
+          echo "TZ=$TZ" >> $GITHUB_ENV
+          echo "GH_ID=$GH_ID" >> $GITHUB_ENV
+          echo "GOOGLE_ID=$GOOGLE_ID" >> $GITHUB_ENV
+          echo "GITLAB_ID=$GITLAB_ID" >> $GITHUB_ENV
+          echo "GH_SECRET=$GH_SECRET" >> $GITHUB_ENV
+          echo "GOOGLE_SECRET=$GOOGLE_SECRET" >> $GITHUB_ENV
+          echo "GITLAB_SECRET=$GITLAB_SECRET" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_FIREBASE_APP_ID=$NEXT_PUBLIC_FIREBASE_APP_ID" >> $GITHUB_ENV
+          echo "BREVO_USER=$BREVO_USER" >> $GITHUB_ENV
+          echo "BREVO_PASS=$BREVO_PASS
+
 
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
@@ -93,8 +115,8 @@ jobs:
             REDIS_URL=${{ env.REDIS_URL }}
             AUTH_SECRET=${{ env.AUTH_SECRET }}
             TZ=${{ env.TZ }}
-            GITHUB_ID=${{ env.GITHUB_ID }}
-            GITHUB_SECRET=${{ env.GITHUB_SECRET }}
+            GITHUB_ID=${{ env.GH_ID }}
+            GITHUB_SECRET=${{ env.GH_SECRET }}
             GOOGLE_ID=${{ env.GOOGLE_ID }}
             GOOGLE_SECRET=${{ env.GOOGLE_SECRET }}
             GITLAB_ID=${{ env.GITLAB_ID }}
@@ -106,6 +128,8 @@ jobs:
             NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
             NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+            BREVO_USER=${{ env.BREVO_USER }}
+            BREVO_PASS=${{ env.BREVO_PASS }}
         # run: |
         #   BRANCH_NAME=${{ env.BRANCH_NAME }}
         #   IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
@@ -149,6 +173,8 @@ jobs:
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          BREVO_USER=${{ env.BREVO_USER }}
+          BREVO_PASS=${{ env.BREVO_PASS }}
 
           BRANCH_NAME=${{ env.BRANCH_NAME }}
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
