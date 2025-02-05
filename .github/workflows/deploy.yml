@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -94,18 +94,18 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        # with:
-        #   platforms: linux/arm64
-        #   buildkitd-flags: '--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host'
-        #   driver-opts: |
-        #     network=host
+        with:
+          platforms: linux/arm64
+          buildkitd-flags: '--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host'
+          driver-opts: |
+            network=host
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
-          # platforms: linux/arm64
+          platforms: linux/arm64
           push: true
-          # allow: network.host
+          allow: network.host
           network: host
           tags: ${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
