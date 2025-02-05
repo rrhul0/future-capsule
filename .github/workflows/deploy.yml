@@ -18,11 +18,18 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      # - name: Checkout Code
+      #   uses: actions/checkout@v3
 
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Login to GitHub Container Registry
+      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: create ssh tunnel
         run: |
@@ -37,7 +44,7 @@ jobs:
           sudo apt-get install -y postgresql-client
 
           # Test if database is available using pg_isready
-          echo "DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule" >> $GITHUB_ENV
+          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule" >> $GITHUB_ENV
           for i in {1..10}; do
           if pg_isready -d postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule; then
             echo "Database is available"
@@ -47,13 +54,64 @@ jobs:
           sleep 5
           done
 
-      - name: Build and Push Docker Image
+      - name: Set up environment variables
         run: |
+          DATABASE_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.DATABASE_URL_PROD }} || echo ${{ env.DATABASE_URL_PREVIEW }})
+          REDIS_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.REDIS_URL_PROD }} || echo ${{ env.REDIS_URL_PREVIEW }})
+          AUTH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.AUTH_SECRET_PROD }} || echo ${{ secrets.AUTH_SECRET_PREVIEW }})
+          TZ=${{ env.TZ }}
+          GITHUB_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GITHUB_ID_PROD }} || echo ${{ env.GITHUB_ID_PREVIEW }})
+          GOOGLE_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GOOGLE_ID_PROD }} || echo ${{ env.GOOGLE_ID_PREVIEW }})
+          GITLAB_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GITLAB_ID_PROD }} || echo ${{ env.GITLAB_ID_PREVIEW }})
+          GITHUB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITHUB_SECRET_PROD }} || echo ${{ secrets.GITHUB_SECRET_PREVIEW }})
+          GOOGLE_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GOOGLE_SECRET_PROD }} || echo ${{ secrets.GOOGLE_SECRET_PREVIEW }})
+          GITLAB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITLAB_SECRET_PROD }} || echo ${{ secrets.GITLAB_SECRET_PREVIEW }})
+          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          NEXT_PUBLIC_FIREBASE_API_KEY=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_API_KEY_PROD }} || echo ${{ secrets.FIREBASE_API_KEY_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_AUTH_DOMAIN_PROD }} || echo ${{ secrets.FIREBASE_AUTH_DOMAIN_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_PROJECT_ID_PROD }} || echo ${{ secrets.FIREBASE_PROJECT_ID_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_STORAGE_BUCKET_PROD }} || echo ${{ secrets.FIREBASE_STORAGE_BUCKET_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_PROD }} || echo ${{ secrets.FIREBASE_MESSAGING_SENDER_ID_PREVIEW }})
+          NEXT_PUBLIC_FIREBASE_APP_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.FIREBASE_APP_ID_PROD }} || echo ${{ secrets.FIREBASE_APP_ID_PREVIEW }})
+
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          docker build --network host --build-arg DATABASE_URL=${{ env.DATABASE_URL }} -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG .
-          docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          networks: host
+          tags: $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
+          build-args: |
+            DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
+            REDIS_URL=${{ env.REDIS_URL }}
+            AUTH_SECRET=${{ env.AUTH_SECRET }}
+            TZ=${{ env.TZ }}
+            GITHUB_ID=${{ env.GITHUB_ID }}
+            GITHUB_SECRET=${{ env.GITHUB_SECRET }}
+            GOOGLE_ID=${{ env.GOOGLE_ID }}
+            GOOGLE_SECRET=${{ env.GOOGLE_SECRET }}
+            GITLAB_ID=${{ env.GITLAB_ID }}
+            GITLAB_SECRET=${{ env.GITLAB_SECRET }}
+            NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.NEXT_PUBLIC_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+            NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+        # run: |
+        #   BRANCH_NAME=${{ env.BRANCH_NAME }}
+        #   IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
+
+        #   docker build --network host --build-arg DATABASE_URL=${{ env.DATABASE_URL }} -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG .
+        #   docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
   deploy:
     needs: build
@@ -62,9 +120,37 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # - name: Login to GitHub Container Registry
+      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Deploy Application
         run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
+          DATABASE_URL=${{ env.DATABASE_URL }}
+          REDIS_URL=${{ env.REDIS_URL }}
+          AUTH_SECRET=${{ env.AUTH_SECRET }}
+          TZ=${{ env.TZ }}
+          GITHUB_ID=${{ env.GITHUB_ID }}
+          GITHUB_SECRET=${{ env.GITHUB_SECRET }}
+          GOOGLE_ID=${{ env.GOOGLE_ID }}
+          GOOGLE_SECRET=${{ env.GOOGLE_SECRET }}
+          GITLAB_ID=${{ env.GITLAB_ID }}
+          GITLAB_SECRET=${{ env.GITLAB_SECRET }}
+          NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
+
+          BRANCH_NAME=${{ env.BRANCH_NAME }}
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
