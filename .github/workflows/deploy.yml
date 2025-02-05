@@ -108,7 +108,7 @@ jobs:
         with:
           context: .
           push: true
-          networks: host
+          network: host
           tags: $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
           build-args: |
             DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
