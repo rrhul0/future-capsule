@@ -90,13 +90,19 @@ jobs:
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
+      - name: Debug Environment Variables
+        run: |
+          echo "REGISTRY=$REGISTRY"
+          echo "GITHUB_ACTOR=$GITHUB_ACTOR"
+          echo "IMAGE_NAME=$IMAGE_NAME"
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           network: host
-          tags: $REGISTRY/$GITHUB_ACTOR/IMAGE_NAME:${{ env.IMAGE_TAG }}
+          tags: $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:${{ env.IMAGE_TAG }}
           build-args: |
             DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
             REDIS_URL=${{ env.REDIS_URL }}
