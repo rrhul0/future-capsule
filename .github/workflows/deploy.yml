@@ -104,7 +104,7 @@ jobs:
         with:
           platforms: linux/arm64
           push: true
-          # allow: network.host
+          allow: network.host
           network: host
           tags: ${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
