@@ -25,11 +25,6 @@ ARG NEXT_PUBLIC_FIREBASE_APP_ID
 ARG BREVO_USER
 ARG BREVO_PASS
 
-ARG DATABASE_PORT
-ARG VPS_USER
-ARG VPS_HOST
-ARG VPS_SSH_PORT
-
 # Set environment variables
 ENV DATABASE_URL=${DATABASE_URL}
 ENV REDIS_URL=${REDIS_URL}
@@ -64,12 +59,6 @@ ENV NODE_ENV=production
 
 # Copy the rest of the application code
 COPY . .
-
-# Enable SSH forwarding in the build
-RUN mkdir -p ~/.ssh && chmod 0700 ~/.ssh
-
-RUN --mount=type=ssh,id=default \
-    ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:${DATABASE_PORT} ${VPS_USER}@${VPS_HOST} -p ${VPS_SSH_PORT}
 
 # Build the Next.js application
 RUN yarn build

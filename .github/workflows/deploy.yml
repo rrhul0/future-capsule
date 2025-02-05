@@ -29,19 +29,14 @@ jobs:
 
       - name: create ssh tunnel
         run: |
-          eval $(ssh-agent -s)
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-add ~/.ssh/id_rsa
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
           DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
-          echo "DATABASE_PORT=${DATABASE_PORT}" >> $GITHUB_ENV
-
-
-          # echo "Creating SSH tunnel to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }} with database port $DATABASE_PORT"
-          # ssh -o StrictHostKeyChecking=no -N -f -L 5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
-          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/future-capsule" >> $GITHUB_ENV
+          echo "Creating SSH tunnel to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }} with database port $DATABASE_PORT"
+          ssh -o StrictHostKeyChecking=no -N -f -L 0.0.0.0:5432:localhost:$DATABASE_PORT -i ~/.ssh/id_rsa -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+          RUNNER_IP=$(hostname -I | awk '{print $1}')
+          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@$RUNNER_IP:5432/future-capsule" >> $GITHUB_ENV
 
       - name: Set up environment variables
         run: |
@@ -102,15 +97,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           platforms: linux/arm64
+          buildkitd-flags: '--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host'
+          driver-opts: |
+            network=host
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           platforms: linux/arm64
           push: true
-          ssh: default
-          # secrets: |
-          #   id=mysshkey,src=/home/runner/.ssh/id_rsa
+          allow: network.host
+          network: host
           tags: ${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
@@ -132,10 +129,6 @@ jobs:
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
             BREVO_USER=${{ env.BREVO_USER }}
             BREVO_PASS=${{ env.BREVO_PASS }}
-            VPS_USER=${{ secrets.VPS_USER }}
-            VPS_HOST=${{ secrets.VPS_HOST }}
-            VPS_SSH_PORT=${{ secrets.VPS_SSH_PORT }}
-            DATABASE_PORT=${{ env.DATABASE_PORT }}
         # run: |
         #   BRANCH_NAME=${{ env.BRANCH_NAME }}
         #   IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
