@@ -131,12 +131,8 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: $GITHUB_ACTOR
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Container registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Set up environment variables and deploy the docker image
         run: |
@@ -168,13 +164,6 @@ jobs:
           IMAGE_NAME=future-capsule
 
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
-
-          echo $BRANCH_NAME
-          echo $COMPOSE_FILE
-          echo $REGISTRY
-          echo $GITHUB_ACTOR
-          echo $IMAGE_NAME
-          echo $BRANCH_NAME
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
           docker-compose -f $COMPOSE_FILE up -d
