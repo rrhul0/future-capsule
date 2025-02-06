@@ -51,11 +51,11 @@ jobs:
           GITLAB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITLAB_SECRET_PROD }} || echo ${{ secrets.GITLAB_SECRET_PREVIEW }})
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
-          NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ vars.FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
           NEXT_PUBLIC_FIREBASE_APP_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ vars.FIREBASE_APP_ID_PROD }} || echo ${{ env.FIREBASE_APP_ID_PREVIEW }})
           BREVO_USER=${{ secrets.BREVO_USER }}
           BREVO_PASS=${{ secrets.BREVO_PASS }}
@@ -99,26 +99,26 @@ jobs:
         run: |
           TAG=${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           docker build --build-arg \
-            DATABASE_URL=${{ env.DATABASE_URL_BUILD }} \
-            REDIS_URL=${{ env.REDIS_URL }} \
-            AUTH_SECRET=${{ env.AUTH_SECRET }} \
-            TZ=${{ vars.TZ }} \
-            GITHUB_ID=${{ env.GH_ID }} \
-            GITHUB_SECRET=${{ env.GH_SECRET }} \
-            GOOGLE_ID=${{ env.GOOGLE_ID }} \
-            GOOGLE_SECRET=${{ env.GOOGLE_SECRET }} \
-            GITLAB_ID=${{ env.GITLAB_ID }} \
-            GITLAB_SECRET=${{ env.GITLAB_SECRET }} \
-            AUTH_URL=${{ env.AUTH_URL }} \
-            NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }} \
-            NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.NEXT_PUBLIC_FIREBASE_API_KEY }} \
-            NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
-            NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} \
-            NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }} \
-            NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }} \
-            NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }} \
-            BREVO_USER=${{ env.BREVO_USER }} \
-            BREVO_PASS=${{ env.BREVO_PASS }} \
+          DATABASE_URL=${{ env.DATABASE_URL_BUILD }} \
+          REDIS_URL=${{ env.REDIS_URL }} \
+          AUTH_SECRET=${{ env.AUTH_SECRET }} \
+          TZ=${{ vars.TZ }} \
+          GITHUB_ID=${{ env.GH_ID }} \
+          GITHUB_SECRET=${{ env.GH_SECRET }} \
+          GOOGLE_ID=${{ env.GOOGLE_ID }} \
+          GOOGLE_SECRET=${{ env.GOOGLE_SECRET }} \
+          GITLAB_ID=${{ env.GITLAB_ID }} \
+          GITLAB_SECRET=${{ env.GITLAB_SECRET }} \
+          AUTH_URL=${{ env.AUTH_URL }} \
+          NEXT_PUBLIC_APP_URL=${{ env.NEXT_PUBLIC_APP_URL }} \
+          NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.NEXT_PUBLIC_FIREBASE_API_KEY }} \
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} \
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }} \
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }} \
+          NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }} \
+          BREVO_USER=${{ env.BREVO_USER }} \
+          BREVO_PASS=${{ env.BREVO_PASS }} \
           -t $TAG .
 
           docker push $TAG
