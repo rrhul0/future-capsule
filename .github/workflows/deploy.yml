@@ -39,9 +39,7 @@ jobs:
       - name: Set up environment variables
         run: |
           DATABASE_URL=${{ secrets.DATABASE_URL }}
-          REDIS_URL=${{ env.REDIS_URL }}
           AUTH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.AUTH_SECRET_PROD }} || echo ${{ secrets.AUTH_SECRET_PREVIEW }})
-          TZ=${{ env.TZ }}
           GH_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GH_ID_PROD }} || echo ${{ env.GH_ID_PREVIEW }})
           GOOGLE_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GOOGLE_ID_PROD }} || echo ${{ env.GOOGLE_ID_PREVIEW }})
           GITLAB_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GITLAB_ID_PROD }} || echo ${{ env.GITLAB_ID_PREVIEW }})
@@ -59,9 +57,7 @@ jobs:
           BREVO_PASS=${{ secrets.BREVO_PASS }}
 
           echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
-          echo "REDIS_URL=$REDIS_URL" >> $GITHUB_ENV
           echo "AUTH_SECRET=$AUTH_SECRET" >> $GITHUB_ENV
-          echo "TZ=$TZ" >> $GITHUB_ENV
           echo "GH_ID=$GH_ID" >> $GITHUB_ENV
           echo "GOOGLE_ID=$GOOGLE_ID" >> $GITHUB_ENV
           echo "GITLAB_ID=$GITLAB_ID" >> $GITHUB_ENV
@@ -171,6 +167,8 @@ jobs:
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
+
+          echo $DATABASE_URL $REDIS_URL
 
           DATABASE_URL=$DATABASE_URL \
           REDIS_URL=$REDIS_URL \
