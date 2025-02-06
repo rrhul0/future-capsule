@@ -1,10 +1,3 @@
-# Use the official Node.js image as the base image
-FROM node:20
-
-# Set the working directory
-WORKDIR /app
-
-# Accept build argument
 ARG DATABASE_URL
 ARG REDIS_URL
 ARG AUTH_SECRET
@@ -24,6 +17,35 @@ ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ARG NEXT_PUBLIC_FIREBASE_APP_ID
 ARG BREVO_USER
 ARG BREVO_PASS
+
+
+
+# FROM node:20 AS Builder
+
+# WORKDIR /app
+# COPY package.json yarn.lock ./
+# COPY prisma ./prisma
+# RUN yarn --frozen-lockfile
+# COPY . .
+# RUN yarn build
+
+# FROM node:20 AS Runner
+# WORKDIR /app
+# COPY --from=Builder /app/.next ./.next
+# COPY --from=Builder /app/public ./public
+# COPY --from=Builder /app/package.json ./package.json
+# COPY --from=Builder /app/yarn.lock ./yarn.lock
+# ENV NODE_ENV=production
+
+# # Expose the port the app runs on
+# EXPOSE 3000
+
+# # Start the Next.js application
+# CMD ["yarn", "start"]
+
+# syntax=docker.io/docker/dockerfile:1
+
+FROM node:18-alpine AS base
 
 # Set environment variables
 ENV DATABASE_URL=${DATABASE_URL}
@@ -46,25 +68,53 @@ ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
 ENV BREVO_USER=${BREVO_USER}
 ENV BREVO_PASS=${BREVO_PASS}
 
-# Copy package.json and yarn.lock files
-COPY package.json yarn.lock ./
+# 1. Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 
-# copy prisma schema
-COPY prisma ./prisma
+WORKDIR /app
 
-# Install dependencies
-RUN yarn install
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+
+# 2. Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# This will do the trick, use the corresponding env file for each environment.
+# COPY .env.production.sample .env.production
+RUN npm run build
+
+# 3. Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy the rest of the application code
-COPY . .
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 
-# Build the Next.js application
-RUN yarn build
+COPY --from=builder /app/public ./public
 
-# Expose the port the app runs on
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+
+USER nextjs
+
 EXPOSE 3000
 
-# Start the Next.js application
-CMD ["yarn", "start"]
+ENV PORT=3000
+
+CMD HOSTNAME="0.0.0.0" node server.js

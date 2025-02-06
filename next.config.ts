@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
       destination: '/settings/profile',
       permanent: true
     }
-  ]
+  ],
+  output: 'standalone'
 }
 
 export default nextConfig
