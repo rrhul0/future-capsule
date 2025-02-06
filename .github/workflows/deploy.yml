@@ -138,7 +138,7 @@ jobs:
           username: $GITHUB_ACTOR
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up environment variables
+      - name: Set up environment variables and deploy the docker image
         run: |
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           REDIS_URL=${{ env.REDIS_URL }}
@@ -167,14 +167,14 @@ jobs:
           GITHUB_ACTOR=$GITHUB_ACTOR
           IMAGE_NAME=future-capsule
 
-      - name: Deploy Application
-        run: |
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
 
           echo $BRANCH_NAME
           echo $COMPOSE_FILE
           echo $REGISTRY
           echo $GITHUB_ACTOR
+          echo $IMAGE_NAME
+          echo $BRANCH_NAME
 
           docker pull ${{ env.REGISTRY }}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:$BRANCH_NAME
           docker-compose -f $COMPOSE_FILE up -d
