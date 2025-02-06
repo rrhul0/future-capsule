@@ -171,4 +171,4 @@ jobs:
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
-          docker compose -f $COMPOSE_FILE up -d
+          docker compose -f $HOME/future-capsule/$COMPOSE_FILE up -d
