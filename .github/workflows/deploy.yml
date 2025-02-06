@@ -176,5 +176,5 @@ jobs:
           echo $IMAGE_NAME
           echo $BRANCH_NAME
 
-          docker pull ${{ env.REGISTRY }}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:$BRANCH_NAME
+          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
           docker-compose -f $COMPOSE_FILE up -d
