@@ -14,18 +14,12 @@ jobs:
       packages: write
 
     steps:
-      # - name: Checkout Code
-      #   uses: actions/checkout@v3
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Login to GitHub Container Registry
-      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Tailscale
         uses: tailscale/github-action@v3
@@ -36,8 +30,8 @@ jobs:
 
       - name: create database url
         run: |
-          DATABASE_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
-          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@new-mumbai:$DATABASE_PORT/future-capsule" >> $GITHUB_ENV
+          DATABASE_BUILD_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
+          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@new-mumbai:$DATABASE_BUILD_PORT/future-capsule" >> $GITHUB_ENV
 
       - name: Set up environment variables
         run: |
@@ -81,6 +75,8 @@ jobs:
           echo "BREVO_USER=$BREVO_USER" >> $GITHUB_ENV
           echo "BREVO_PASS=$BREVO_PASS"
 
+          DATABASE_BUILD_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
+          echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@new-mumbai:$DATABASE_BUILD_PORT/future-capsule" >> $GITHUB_ENV
 
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
@@ -92,23 +88,19 @@ jobs:
           echo "GITHUB_ACTOR=$GITHUB_ACTOR" >> $GITHUB_ENV
           echo "IMAGE_NAME=future-capsule" >> $GITHUB_ENV
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/arm64
-          # buildkitd-flags: '--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host'
-          # driver-opts: |
-          #   network=host
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
+
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+      #   with:
+      #     platforms: linux/arm64
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           platforms: linux/arm64
           push: true
-          # allow: network.host
-          # network: host
           tags: ${{ env.REGISTRY}}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             DATABASE_URL=${{ env.DATABASE_URL_BUILD }}
@@ -130,12 +122,6 @@ jobs:
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ env.NEXT_PUBLIC_FIREBASE_APP_ID }}
             BREVO_USER=${{ env.BREVO_USER }}
             BREVO_PASS=${{ env.BREVO_PASS }}
-        # run: |
-        #   BRANCH_NAME=${{ env.BRANCH_NAME }}
-        #   IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
-
-        #   docker build --network host --build-arg DATABASE_URL=${{ env.DATABASE_URL }} -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG .
-        #   docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
   deploy:
     needs: build
@@ -144,9 +130,6 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # - name: Login to GitHub Container Registry
-      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -178,6 +161,11 @@ jobs:
 
           BRANCH_NAME=${{ env.BRANCH_NAME }}
           COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
+
+          echo $BRANCH_NAME
+          echo $COMPOSE_FILE
+          echo $env.REGISTRY
+          echo $env.GITHUB_ACTOR
 
           docker pull ${{ env.REGISTRY }}/${{ env.GITHUB_ACTOR }}/${{ env.IMAGE_NAME }}:$BRANCH_NAME
           docker-compose -f $COMPOSE_FILE up -d
