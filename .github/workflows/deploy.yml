@@ -38,6 +38,12 @@ jobs:
 
       - name: Set up environment variables
         run: |
+          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
+          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           AUTH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.AUTH_SECRET_PROD }} || echo ${{ secrets.AUTH_SECRET_PREVIEW }})
           GH_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.GH_ID_PROD }} || echo ${{ env.GH_ID_PREVIEW }})
@@ -78,12 +84,6 @@ jobs:
 
           DATABASE_BUILD_PORT=$([[ "$BRANCH_NAME" == "main" ]] && echo "5432" || echo "6432")
           echo "DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@new-mumbai:$DATABASE_BUILD_PORT/future-capsule" >> $GITHUB_ENV
-
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
-
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
           echo "REGISTRY=ghcr.io" >> $GITHUB_ENV
           echo "GITHUB_ACTOR=$GITHUB_ACTOR" >> $GITHUB_ENV
@@ -140,6 +140,9 @@ jobs:
 
       - name: Set up environment variables and deploy the docker image
         run: |
+          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
+          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
+
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           REDIS_URL=${{ env.REDIS_URL }}
           AUTH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.AUTH_SECRET_PROD }} || echo ${{ secrets.AUTH_SECRET_PREVIEW }})
@@ -150,8 +153,8 @@ jobs:
           GH_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GH_SECRET_PROD }} || echo ${{ secrets.GH_SECRET_PREVIEW }})
           GOOGLE_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GOOGLE_SECRET_PROD }} || echo ${{ secrets.GOOGLE_SECRET_PREVIEW }})
           GITLAB_SECRET=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ secrets.GITLAB_SECRET_PROD }} || echo ${{ secrets.GITLAB_SECRET_PREVIEW }})
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
+          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           NEXT_PUBLIC_FIREBASE_API_KEY=${{ env.FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ env.FIREBASE_AUTH_DOMAIN }}
           NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ env.FIREBASE_PROJECT_ID }}
@@ -160,9 +163,6 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID=$([[ "$BRANCH_NAME" == "main" ]] && echo ${{ env.FIREBASE_APP_ID_PROD }} || echo ${{ env.FIREBASE_APP_ID_PREVIEW }})
           BREVO_USER=${{ secrets.BREVO_USER }}
           BREVO_PASS=${{ secrets.BREVO_PASS }}
-
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
           REGISTRY=ghcr.io
           GITHUB_ACTOR=$GITHUB_ACTOR
