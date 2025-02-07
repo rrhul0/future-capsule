@@ -20,8 +20,8 @@ jobs:
     environment: preview
     concurrency: preview
     outputs:
-      output1: ${{ steps.step1.outputs.test }}
-      output2: ${{ steps.step2.outputs.test }}
+      postgres_ip: ${{ steps.db-setup.outputs.postgres_ip }}
+      redis_ip: ${{ steps.db-setup.outputs.redis_ip }}
     steps:
       - name: Download the docker compose for application from GitHub
         run: |
@@ -29,6 +29,7 @@ jobs:
           curl -o docker-compose.db.yml -L https://raw.githubusercontent.com/rrhul0/future-capsule/$BRANCH_NAME/docker-compose.db.yml
 
       - name: Run databases if not running
+        id: db-setup
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
@@ -44,10 +45,11 @@ jobs:
 
           POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-postgres-1)
           echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_OUTPUT
-          echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_ENV
           REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-redis-1)
           echo "REDIS_IP=$REDIS_IP" >> $GITHUB_OUTPUT
-          echo "REDIS_IP=$REDIS_IP" >> $GITHUB_ENV
+
+          echo "POSTGRES_IP=$POSTGRES_IP"
+          echo "REDIS_IP=$REDIS_IP"
 
   build:
     runs-on: ubuntu-24.04-arm
@@ -75,8 +77,8 @@ jobs:
 
       - name: Build and Push Docker Image
         env:
-          POSTGRES_IP: ${{needs.job1.outputs.output1}}
-          REDIS_IP: ${{needs.job1.outputs.output2}}
+          POSTGRES_IP: ${{needs.pre-setup.outputs.postgres_ip}}
+          REDIS_IP: ${{needs.pre-setup.outputs.redis_ip}}
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
@@ -91,8 +93,6 @@ jobs:
           echo $REDIS_IP
           echo $DATABASE_URL_BUILD
           echo $REDIS_URL_BUILD
-          echo ${{ env.POSTGRES_IP }}
-          echo ${{ env.REDIS_IP }}
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG || true
 
