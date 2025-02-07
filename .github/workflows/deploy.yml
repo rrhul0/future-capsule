@@ -31,16 +31,14 @@ jobs:
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
           if [ ! "$(docker ps -q -f name=postgres-$IMAGE_TAG)" ]; then
-            IMAGE_TAG=$IMAGE_TAG \
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASS }} \
             POSTGRES_HOST_PORT=${{ vars.POSTGRES_HOST_PORT }} \
-            docker compose -f docker-compose.db.yml up -d postgres
+            docker compose --project-name $IMAGE_TAG -f docker-compose.db.yml up -d postgres
           fi
 
           if [ ! "$(docker ps -q -f name=redis-$IMAGE_TAG)" ]; then
-            IMAGE_TAG=$IMAGE_TAG \
             REDIS_HOST_PORT=${{ vars.REDIS_HOST_PORT }} \
-            docker compose -f docker-compose.db.yml up -d redis
+            docker compose --project-name $IMAGE_TAG -f docker-compose.db.yml up -d redis
           fi
 
   build:
@@ -135,7 +133,7 @@ jobs:
           docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
           if [ "$(docker ps -q -f name=future-capsule-$IMAGE_NAME)" ]; then
-            docker compose down
+            docker compose --project-name $IMAGE_TAG down
           fi
 
           DATABASE_URL=${{ secrets.DATABASE_URL}} \
@@ -158,4 +156,4 @@ jobs:
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
           IMAGE_TAG=$IMAGE_TAG \
-          docker compose up -d
+          docker compose --project-name $IMAGE_TAG up -d

@@ -1,16 +1,16 @@
 services:
-  redis-${IMAGE_TAG}:
+  redis:
     image: redis:alpine
-    container_name: redis-${IMAGE_TAG}
+    container_name: redis
     restart: always
     ports:
       - ${REDIS_HOST_PORT}:6379
     volumes:
-      - redis-${IMAGE_TAG}:/data
+      - redis:/data
 
-  postgres-${IMAGE_TAG}:
+  postgres:
     image: postgres:15
-    container_name: postgres-${IMAGE_TAG}
+    container_name: postgres
     restart: always
     ports:
       - ${POSTGRES_HOST_PORT}:5432
@@ -19,7 +19,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: future-capsule
     volumes:
-      - postgres-${IMAGE_TAG}:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
 
 networks:
   default:
@@ -27,5 +27,5 @@ networks:
     external: true
 
 volumes:
-  postgres-${IMAGE_TAG}:
-  redis-${IMAGE_TAG}:
+  postgres:
+  redis:
