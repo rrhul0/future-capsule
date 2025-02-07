@@ -11,14 +11,14 @@ env:
   IMAGE_NAME: future-capsule
 
 # concurrency:
-#   group: preview
+#   group: production
 #   cancel-in-progress: true
 
 jobs:
   pre-setup:
     runs-on: self-hosted
-    environment: preview
-    concurrency: preview
+    environment: production
+    concurrency: production
     steps:
       - name: Download the docker compose for application from GitHub
         run: |
@@ -44,8 +44,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04-arm
     needs: pre-setup
-    environment: preview
-    concurrency: preview
+    environment: production
+    concurrency: production
     permissions:
       contents: read
       packages: write
@@ -106,8 +106,8 @@ jobs:
 
   deploy:
     needs: build
-    environment: preview
-    concurrency: preview
+    environment: production
+    concurrency: production
     permissions:
       contents: read
       packages: read
