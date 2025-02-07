@@ -30,10 +30,10 @@ services:
       - '3000'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.${BRANCH_NAME}.entrypoints=websecure'
-      - 'traefik.http.routers.${BRANCH_NAME}.rule=Host(`${BRANCH_NAME}.tt.clammy.xyz`)'
-      - 'traefik.http.routers.${BRANCH_NAME}.tls.certresolver=myresolver'
-      - 'traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.${IMAGE_TAG}.entrypoints=websecure'
+      - 'traefik.http.routers.${IMAGE_TAG}.rule=Host(`${IMAGE_TAG}.tt.clammy.xyz`)'
+      - 'traefik.http.routers.${IMAGE_TAG}.tls.certresolver=myresolver'
+      - 'traefik.http.services.${IMAGE_TAG}.loadbalancer.server.port=3000'
 networks:
   traefik:
     external: true
