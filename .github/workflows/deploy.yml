@@ -43,8 +43,10 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
+
+          echo $AUTH_URL
 
           export ACTIONS_CACHE_URL=$(echo "$ACTIONS_ID_TOKEN_REQUEST_URL" | grep -Po 'https://[^/]+/[^/]+/' | sed 's/pipelines/artifactcache/')
           export ACTIONS_RUNTIME_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
@@ -55,7 +57,7 @@ jobs:
           docker buildx build --builder mybuilder --load \
           --build-arg DATABASE_URL=${{ secrets.DATABASE_URL_BUILD }} \
           --build-arg REDIS_URL=${{ vars.REDIS_URL_BUILD }} \
-          --build-arg AUTH_SECRET=${{ vars.AUTH_SECRET }} \
+          --build-arg AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
           --build-arg TZ=${{ vars.TZ }} \
           --build-arg GITHUB_ID=${{ vars.GH_ID }} \
           --build-arg GITHUB_SECRET=${{ secrets.GH_SECRET }} \
