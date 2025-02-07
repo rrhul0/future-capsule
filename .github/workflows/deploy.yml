@@ -38,14 +38,6 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Set up Docker cache
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: docker-arm64-${{ github.sha }}
-          restore-keys: |
-            docker-arm64-
-
       - name: Build and Push Docker Image
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
@@ -53,6 +45,8 @@ jobs:
 
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
+
+          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG || true
 
           docker buildx create --name mybuilder --driver docker-container --use
           docker buildx inspect mybuilder --bootstrap
@@ -79,8 +73,7 @@ jobs:
           --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
           --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
           -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG --file Dockerfile . \
-          --cache-from=type=local,src=/tmp/.buildx-cache \
-          --cache-to=type=local,dest=/tmp/.buildx-cache
+          --cache-from=$REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
           docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
