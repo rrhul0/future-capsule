@@ -1,0 +1,31 @@
+services:
+  redis-${IMAGE_TAG}:
+    image: redis:alpine
+    container_name: redis-${IMAGE_TAG}
+    restart: always
+    ports:
+      - ${REDIS_HOST_PORT}:6379
+    volumes:
+      - redis-${IMAGE_TAG}:/data
+
+  postgres-${IMAGE_TAG}:
+    image: postgres:15
+    container_name: postgres-${IMAGE_TAG}
+    restart: always
+    ports:
+      - ${POSTGRES_HOST_PORT}:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: future-capsule
+    volumes:
+      - postgres-${IMAGE_TAG}:/var/lib/postgresql/data
+
+networks:
+  default:
+    name: traefik
+    external: true
+
+volumes:
+  postgres-${IMAGE_TAG}:
+  redis-${IMAGE_TAG}:
