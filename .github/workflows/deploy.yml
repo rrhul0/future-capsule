@@ -206,7 +206,15 @@ jobs:
           production_environment: false
           description: 'Deployment for ${{ github.ref }}'
           headers: '{"Accept": "application/vnd.github+json"}'
-          body: '{"required_contexts": []}'
+          body: >
+            {
+              "required_contexts": [],
+              "environment": "preview",
+              "auto_merge": false,
+              "transient_environment": true,
+              "production_environment": false,
+              "description": "Deployment for ${{ github.ref }}"
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
