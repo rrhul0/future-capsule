@@ -22,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write # Important for at least docker gha cache
 
     steps:
       - name: Checkout Code
@@ -45,8 +46,11 @@ jobs:
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
 
+          export ACTIONS_CACHE_URL=$(echo "$ACTIONS_ID_TOKEN_REQUEST_URL" | grep -Po 'https://[^/]+/[^/]+/' | sed 's/pipelines/artifactcache/')
+          export ACTIONS_RUNTIME_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
+
           docker build \
-          --build-arg DATABASE_URL=${{ vars.DATABASE_URL_BUILD }} \
+          --build-arg DATABASE_URL=${{ secrets.DATABASE_URL_BUILD }} \
           --build-arg REDIS_URL=${{ vars.REDIS_URL_BUILD }} \
           --build-arg AUTH_SECRET=${{ vars.AUTH_SECRET }} \
           --build-arg TZ=${{ vars.TZ }} \
@@ -66,7 +70,7 @@ jobs:
           --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }} \
           --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
           --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
-          -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG .
+          -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG --load --file Dockerfile . --cache-to "type=gha,mode=max" --cache-from type=gha
 
           docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
