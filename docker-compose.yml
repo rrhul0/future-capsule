@@ -1,7 +1,6 @@
 services:
   webapp:
     image: ghcr.io/rrhul0/future-capsule:${IMAGE_TAG}
-    container_name: future-capsule
     restart: always
     environment:
       - DATABASE_URL=${DATABASE_URL}
