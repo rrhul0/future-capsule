@@ -48,9 +48,6 @@ jobs:
           REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-redis-1)
           echo "REDIS_IP=$REDIS_IP" >> $GITHUB_OUTPUT
 
-          echo "POSTGRES_IP=$POSTGRES_IP"
-          echo "REDIS_IP=$REDIS_IP"
-
   build:
     runs-on: ubuntu-24.04-arm
     needs: pre-setup
@@ -59,7 +56,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # Important for at least docker gha cache
 
     steps:
       - name: Checkout Code
@@ -129,6 +125,8 @@ jobs:
     needs: build
     environment: preview
     concurrency: preview
+    outputs:
+      DEPLOY_URL: ${{ steps.deploy.outputs.DEPLOY_URL }}
     permissions:
       contents: read
       packages: read
@@ -144,12 +142,15 @@ jobs:
           curl -o docker-compose.yml -L https://raw.githubusercontent.com/rrhul0/future-capsule/$BRANCH_NAME/docker-compose.yml
 
       - name: Set up environment variables and deploy the docker image
+        id: deploy
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          echo "DEPLOY_URL=NEXT_PUBLIC_APP_URL" >> $GITHUB_OUTPUT
+
           DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
@@ -179,3 +180,49 @@ jobs:
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
           IMAGE_TAG=$IMAGE_TAG \
           docker compose --project-name $APP_NAME-$IMAGE_TAG-app up -d
+
+  update-status:
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: preview
+    concurrency: preview
+    env:
+      DEPLOY_URL: ${{ needs.deploy.outputs.DEPLOY_URL }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Create Deployment on GitHub
+        id: create_deployment
+        uses: octokit/request-action@v2.x
+        with:
+          route: POST /repos/{owner}/{repo}/deployments
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          ref: ${{ github.sha }}
+          required_contexts: ''
+          environment: preview
+          auto_merge: false
+          transient_environment: true
+          production_environment: false
+          description: 'Deployment for ${{ github.ref }}'
+          headers: '{"Accept": "application/vnd.github+json"}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Deployment Status
+        uses: octokit/request-action@v2.x
+        with:
+          route: POST /repos/{owner}/{repo}/deployments/${{ steps.create_deployment.outputs.id }}/statuses
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          state: success
+          environment_url: $DEPLOY_URL
+          headers: '{"Accept": "application/vnd.github+json"}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show Deployment Link in Summary
+        run: |
+          echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "[View Deployment]($DEPLOY_URL)" >> $GITHUB_STEP_SUMMARY
