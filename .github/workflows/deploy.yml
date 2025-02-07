@@ -200,6 +200,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
           ref: ${{ github.sha }}
+          required_contexts: []
           environment: preview
           auto_merge: false
           transient_environment: true
