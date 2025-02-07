@@ -54,8 +54,6 @@ jobs:
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
 
-
-
           docker buildx create --name mybuilder --driver docker-container --use
           docker buildx inspect mybuilder --bootstrap
 
@@ -99,6 +97,11 @@ jobs:
       - name: Login to GitHub Container registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
+      - name: Download a single file from GitHub
+        run: |
+          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
+          curl -o docker-compose.yml -L https://raw.githubusercontent.com/rrhul0/future-capsule/$BRANCH_NAME/docker-compose.yml
+
       - name: Set up environment variables and deploy the docker image
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
@@ -107,12 +110,10 @@ jobs:
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
 
-          COMPOSE_FILE=$([[ "$BRANCH_NAME" == "main" ]] && echo "docker-compose.production.yml" || echo "docker-compose.preview.yml")
-
-          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$BRANCH_NAME
+          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
 
           if [ "$(docker ps -q -f name=future-capsule-$BRANCH_NAME)" ]; then
-            docker compose -f $HOME/future-capsule/$COMPOSE_FILE down
+            docker compose down
           fi
 
           DATABASE_URL=${{ secrets.DATABASE_URL}} \
@@ -134,5 +135,5 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID}} \
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
-          BRANCH_NAME=$BRANCH_NAME \
-          docker compose -f $HOME/future-capsule/$COMPOSE_FILE up -d
+          IMAGE_TAG=$IMAGE_TAG \
+          docker compose up -d
