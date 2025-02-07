@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: future-capsule
+  APP_NAME: future-capsule
 
 # concurrency:
 #   group: preview
@@ -19,6 +19,9 @@ jobs:
     runs-on: self-hosted
     environment: preview
     concurrency: preview
+    outputs:
+      output1: ${{ steps.step1.outputs.test }}
+      output2: ${{ steps.step2.outputs.test }}
     steps:
       - name: Download the docker compose for application from GitHub
         run: |
@@ -30,16 +33,21 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          if [ ! "$(docker ps -q -f name=$IMAGE_NAME-$IMAGE_TAG-db-postgres-1)" ]; then
+          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-db-postgres-1)" ]; then
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASS }} \
-            POSTGRES_HOST_PORT=${{ vars.POSTGRES_HOST_PORT }} \
-            docker compose --project-name $IMAGE_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d postgres
+            docker compose --project-name $APP_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d postgres
           fi
 
-          if [ ! "$(docker ps -q -f name=$IMAGE_NAME-$IMAGE_TAG-db-redis-1)" ]; then
-            REDIS_HOST_PORT=${{ vars.REDIS_HOST_PORT }} \
-            docker compose --project-name $IMAGE_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d redis
+          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-db-redis-1)" ]; then
+            docker compose --project-name $APP_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d redis
           fi
+
+          POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-postgres-1)
+          echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_OUTPUT
+          echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_ENV
+          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-redis-1)
+          echo "REDIS_IP=$REDIS_IP" >> $GITHUB_OUTPUT
+          echo "REDIS_IP=$REDIS_IP" >> $GITHUB_ENV
 
   build:
     runs-on: ubuntu-24.04-arm
@@ -66,6 +74,9 @@ jobs:
           tags: tag:ci
 
       - name: Build and Push Docker Image
+        env:
+          POSTGRES_IP: ${{needs.job1.outputs.output1}}
+          REDIS_IP: ${{needs.job1.outputs.output2}}
         run: |
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
@@ -73,15 +84,25 @@ jobs:
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
 
-          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG || true
+          DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
+          REDIS_URL_BUILD=redis://$REDIS_IP:6379
+
+          echo $POSTGRES_IP
+          echo $REDIS_IP
+          echo $DATABASE_URL_BUILD
+          echo $REDIS_URL_BUILD
+          echo ${{ env.POSTGRES_IP }}
+          echo ${{ env.REDIS_IP }}
+
+          docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG || true
 
           docker buildx create --name mybuilder --driver docker-container --use
 
           docker buildx build --builder mybuilder --load \
-          --cache-from=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:cache \
-          --cache-to=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:cache,mode=max \
-          --build-arg DATABASE_URL=${{ secrets.DATABASE_URL_BUILD }} \
-          --build-arg REDIS_URL=${{ vars.REDIS_URL_BUILD }} \
+          --cache-from=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$APP_NAME:cache \
+          --cache-to=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$APP_NAME:cache,mode=max \
+          --build-arg DATABASE_URL=$DATABASE_URL_BUILD \
+          --build-arg REDIS_URL=$REDIS_URL_BUILD \
           --build-arg AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
           --build-arg TZ=${{ vars.TZ }} \
           --build-arg GITHUB_ID=${{ vars.GH_ID }} \
@@ -100,9 +121,9 @@ jobs:
           --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }} \
           --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
           --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
-          -t $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG --file Dockerfile .
+          -t $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG --file Dockerfile .
 
-          docker push $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
+          docker push $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
 
   deploy:
     needs: build
@@ -129,11 +150,12 @@ jobs:
 
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
 
-          docker pull $REGISTRY/$GITHUB_ACTOR/$IMAGE_NAME:$IMAGE_TAG
+          docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
 
-          if [ "$(docker ps -q -f name=$IMAGE_NAME-$IMAGE_TAG-app-webapp-1)" ]; then
-            docker compose --project-name $IMAGE_NAME-$IMAGE_TAG-app down
+          if [ "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-app-webapp-1)" ]; then
+            docker compose --project-name $APP_NAME-$IMAGE_TAG-app down
           fi
 
           DATABASE_URL=${{ secrets.DATABASE_URL}} \
@@ -156,4 +178,4 @@ jobs:
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
           IMAGE_TAG=$IMAGE_TAG \
-          docker compose --project-name $IMAGE_NAME-$IMAGE_TAG-app up -d
+          docker compose --project-name $APP_NAME-$IMAGE_TAG-app up -d
