@@ -49,7 +49,7 @@ jobs:
           export ACTIONS_CACHE_URL=$(echo "$ACTIONS_ID_TOKEN_REQUEST_URL" | grep -Po 'https://[^/]+/[^/]+/' | sed 's/pipelines/artifactcache/')
           export ACTIONS_RUNTIME_TOKEN=$ACTIONS_ID_TOKEN_REQUEST_TOKEN
 
-          docker buildx create --name mybuilder --driver containerd --use
+          docker buildx create --name mybuilder --driver docker-container --use
           docker buildx inspect mybuilder --bootstrap
 
           docker buildx build --builder mybuilder --load \
