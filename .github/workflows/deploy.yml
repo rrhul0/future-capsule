@@ -10,9 +10,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: future-capsule
 
-concurrency:
-  group: preview
-  cancel-in-progress: true
+# concurrency:
+#   group: preview
+#   cancel-in-progress: true
 
 jobs:
   build:
