@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - '**' # All branches for preview deployment
+      - staging
 
 env:
   REGISTRY: ghcr.io
