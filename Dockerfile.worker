@@ -21,6 +21,6 @@ FROM base AS runner
 WORKDIR /app
 
 COPY --from=builder /app/package.json .
-COPY bull-worker-dist ./bull-worker-dist
+COPY /app/bull-worker-dist ./bull-worker-dist
 
 CMD ["yarn", "start:worker"]
