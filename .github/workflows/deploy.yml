@@ -163,6 +163,8 @@ jobs:
           --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
           -t $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG --file Dockerfile.worker .
 
+          docker push $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG
+
           echo "### 🚀 Build and Push worker Successful!" >> $GITHUB_STEP_SUMMARY
           echo "Pushed to https://$DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
 
