@@ -181,55 +181,6 @@ jobs:
           IMAGE_TAG=$IMAGE_TAG \
           docker compose --project-name $APP_NAME-$IMAGE_TAG-app up -d
 
-  update-status:
-    needs: deploy
-    runs-on: ubuntu-latest
-    environment: preview
-    concurrency: preview
-    env:
-      DEPLOY_URL: ${{ needs.deploy.outputs.DEPLOY_URL }}
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - name: Create Deployment on GitHub
-        id: create_deployment
-        uses: octokit/request-action@v2.x
-        with:
-          route: POST /repos/{owner}/{repo}/deployments
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          ref: ${{ github.sha }}
-          environment: preview
-          auto_merge: false
-          transient_environment: true
-          production_environment: false
-          description: 'Deployment for ${{ github.ref }}'
-          headers: '{"Accept": "application/vnd.github+json"}'
-          body: >
-            {
-              "required_contexts": [],
-              "environment": "preview",
-              "auto_merge": false,
-              "transient_environment": true,
-              "production_environment": false,
-              "description": "Deployment for ${{ github.ref }}"
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update Deployment Status
-        uses: octokit/request-action@v2.x
-        with:
-          route: POST /repos/{owner}/{repo}/deployments/${{ steps.create_deployment.outputs.id }}/statuses
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          state: success
-          environment_url: $DEPLOY_URL
-          headers: '{"Accept": "application/vnd.github+json"}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Show Deployment Link in Summary
         run: |
           echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
