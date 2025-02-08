@@ -1,6 +1,6 @@
 services:
   webapp:
-    image: ${DOCKER_IMAGE}
+    image: ${DOCKER_IMAGE:-ghcr.io/rrhul0/future-capsule:latest}
     restart: always
     environment:
       - DATABASE_URL=${DATABASE_URL}
