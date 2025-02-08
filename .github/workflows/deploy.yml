@@ -79,16 +79,12 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://future-capsule.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
 
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
           REDIS_URL_BUILD=redis://$REDIS_IP:6379
-
-          echo $POSTGRES_IP
-          echo $REDIS_IP
-          echo $DATABASE_URL_BUILD
-          echo $REDIS_URL_BUILD
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG || true
 
@@ -148,7 +144,9 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://future-capsule.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+
+          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
           echo "DEPLOY_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
 
@@ -180,6 +178,7 @@ jobs:
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
           IMAGE_TAG=$IMAGE_TAG \
+          DEPLOYMENT_DOMAIN=$DEPLOYMENT_DOMAIN \
           docker compose --project-name $APP_NAME-$IMAGE_TAG-app up -d
 
       - name: Show Deployment Link in Summary
