@@ -156,7 +156,7 @@ jobs:
         run: |
           docker pull $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG || true
 
-          docker buildx buildx --builder mybuilder --load \
+          docker buildx buildx --builder mybuilder \
           --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME-worker:cache \
           --cache-to=type=registry,ref=$DOCKER_IMAGE_NAME-worker:cache,mode=max \
           --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
