@@ -1,6 +1,6 @@
 services:
   webapp:
-    image: ghcr.io/rrhul0/future-capsule:${IMAGE_TAG}
+    image: ${DOCKER_IMAGE}
     restart: always
     environment:
       - DATABASE_URL=${DATABASE_URL}
@@ -29,12 +29,32 @@ services:
       - '3000'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.${IMAGE_TAG}.entrypoints=websecure'
-      - 'traefik.http.routers.${IMAGE_TAG}.rule=Host(`${IMAGE_TAG}.tt.clammy.xyz`)'
-      - 'traefik.http.routers.${IMAGE_TAG}.tls.certresolver=myresolver'
-      - 'traefik.http.services.${IMAGE_TAG}.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.${BRANCH_NAME}.entrypoints=websecure'
+      - 'traefik.http.routers.${BRANCH_NAME}.rule=Host(`${DEPLOYMENT_DOMAIN}`)'
+      - 'traefik.http.routers.${BRANCH_NAME}.tls.certresolver=myresolver'
+      - 'traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=3000'
+
+  redis:
+    image: redis:alpine
+    restart: always
+    volumes:
+      - redis:/data
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: future-capsule
+    volumes:
+      - postgres:/var/lib/postgresql/data
 
 networks:
-  traefik:
+  default:
     external: true
     name: traefik
+
+volumes:
+  postgres:
+  redis:

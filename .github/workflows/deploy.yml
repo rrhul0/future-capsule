@@ -15,48 +15,81 @@ env:
 #   cancel-in-progress: true
 
 jobs:
+  setup-env:
+    runs-on: ubuntu-latest
+    environment: preview
+    concurrency: preview
+    outputs:
+      BRANCH_NAME: ${{ steps.envs.outputs.branch_name }}
+      DOCKER_IMAGE_TAG: ${{ steps.envs.outputs.docker_image_tag }}
+      DEPLOYMENT_DOMAIN: ${{ steps.envs.outputs.deployment_domain }}
+      APP_URL: ${{ steps.envs.outputs.app_url }}
+      PROJECT_NAME: ${{ steps.envs.outputs.project_name }}
+      DOCKER_IMAGE_NAME: ${{ steps.envs.outputs.docker_image_name }}
+    steps:
+      - name: Setup env variables
+        id: envs
+        run: |
+          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          DOCKER_IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
+          echo "DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG" >> $GITHUB_OUTPUT
+
+          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "$APP_NAME.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+          echo "DEPLOYMENT_DOMAIN=$DEPLOYMENT_DOMAIN" >> $GITHUB_OUTPUT
+
+          APP_URL=https://$DEPLOYMENT_DOMAIN
+          echo "APP_URL=$APP_URL" >> $GITHUB_OUTPUT
+
+          PROJECT_NAME=$APP_NAME-$DOCKER_IMAGE_TAG
+          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_OUTPUT
+
+          DOCKER_IMAGE_NAME=$REGISTRY/$GITHUB_ACTOR/$APP_NAME
+          echo "DOCKER_IMAGE_NAME=$DOCKER_IMAGE_NAME" >> $GITHUB_OUTPUT
+
   pre-setup:
     runs-on: self-hosted
     environment: preview
     concurrency: preview
+    needs: setup-env
+    env:
+      BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
+      PROJECT_NAME: ${{ needs.setup-env.outputs.PROJECT_NAME }}
     outputs:
-      postgres_ip: ${{ steps.db-setup.outputs.postgres_ip }}
-      redis_ip: ${{ steps.db-setup.outputs.redis_ip }}
+      POSTGRES_IP: ${{ steps.db-setup.outputs.postgres_ip }}
+      REDIS_IP: ${{ steps.db-setup.outputs.redis_ip }}
     steps:
       - name: Download the docker compose for application from GitHub
-        run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          curl -o docker-compose.db.yml -L https://raw.githubusercontent.com/rrhul0/future-capsule/$BRANCH_NAME/docker-compose.db.yml
+        run: curl -o docker-compose.yml -L https://raw.githubusercontent.com/$GITHUB_ACTOR/$APP_NAME/$BRANCH_NAME/docker-compose.yml
 
       - name: Run databases if not running
         id: db-setup
         run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
-
-          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-postgres-1)" ]; then
+          if [ ! "$(docker ps -q -f name=$PROJECT_NAME-postgres-1)" ]; then
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASS }} \
-            docker compose --project-name $APP_NAME-$IMAGE_TAG -f docker-compose.db.yml up -d postgres
+            docker compose --project-name $PROJECT_NAME up -d postgres
           fi
 
-          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-redis-1)" ]; then
-            docker compose --project-name $APP_NAME-$IMAGE_TAG -f docker-compose.db.yml up -d redis
+          if [ ! "$(docker ps -q -f name=$PROJECT_NAME-redis-1)" ]; then
+            docker compose --project-name $PROJECT_NAME up -d redis
           fi
 
-          POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-postgres-1)
+          POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $PROJECT_NAME-postgres-1)
           echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_OUTPUT
-          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-redis-1)
+          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $PROJECT_NAME-redis-1)
           echo "REDIS_IP=$REDIS_IP" >> $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-24.04-arm
-    needs: pre-setup
+    needs:
+      - setup-env
+      - pre-setup
     environment: preview
     concurrency: preview
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -73,26 +106,24 @@ jobs:
 
       - name: Build and Push Docker Image
         env:
-          POSTGRES_IP: ${{needs.pre-setup.outputs.postgres_ip}}
-          REDIS_IP: ${{needs.pre-setup.outputs.redis_ip}}
+          POSTGRES_IP: ${{needs.pre-setup.outputs.POSTGRES_IP}}
+          REDIS_IP: ${{needs.pre-setup.outputs.REDIS_IP}}
+          BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
+          DOCKER_IMAGE_TAG: ${{ needs.setup-env.outputs.DOCKER_IMAGE_TAG }}
+          DEPLOYMENT_DOMAIN: ${{ needs.setup-env.outputs.DEPLOYMENT_DOMAIN }}
+          DOCKER_IMAGE_NAME: ${{ needs.setup-env.outputs.DOCKER_IMAGE_NAME }}
+          APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
         run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
-
-          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
-          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
-          AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
-
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
           REDIS_URL_BUILD=redis://$REDIS_IP:6379
 
-          docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG || true
+          docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG || true
 
           docker buildx create --name mybuilder --driver docker-container --use
 
           docker buildx build --builder mybuilder --load \
-          --cache-from=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$APP_NAME:cache \
-          --cache-to=type=registry,ref=$REGISTRY/$GITHUB_ACTOR/$APP_NAME:cache,mode=max \
+          --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME:cache \
+          --cache-to=type=registry,ref=$DOCKER_IMAGE_NAME:cache,mode=max \
           --build-arg DATABASE_URL=$DATABASE_URL_BUILD \
           --build-arg REDIS_URL=$REDIS_URL_BUILD \
           --build-arg AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
@@ -103,8 +134,8 @@ jobs:
           --build-arg GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET }} \
           --build-arg GITLAB_ID=${{ vars.GITLAB_ID }} \
           --build-arg GITLAB_SECRET=${{ secrets.GITLAB_SECRET }} \
-          --build-arg AUTH_URL=$AUTH_URL \
-          --build-arg NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+          --build-arg AUTH_URL=$APP_URL/auth \
+          --build-arg NEXT_PUBLIC_APP_URL=$APP_URL \
           --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }} \
           --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
           --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} \
@@ -113,15 +144,18 @@ jobs:
           --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }} \
           --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
           --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
-          -t $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG --file Dockerfile .
+          -t DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .
 
-          docker push $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
+          docker push DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
 
           echo "### 🚀 Build and Push Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "Pushed to https://$REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed to https://DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
 
   deploy:
-    needs: build
+    needs:
+      - setup-env
+      - pre-setup
+      - build
     environment: preview
     concurrency: preview
     permissions:
@@ -134,32 +168,30 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
       - name: Download the docker compose for application from GitHub
+        env:
+          BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
         run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          curl -o docker-compose.yml -L https://raw.githubusercontent.com/rrhul0/future-capsule/$BRANCH_NAME/docker-compose.yml
+          curl -o docker-compose.yml -L https://raw.githubusercontent.com/$GITHUB_ACTOR/$APP_NAME/$BRANCH_NAME/docker-compose.yml
 
       - name: Set up environment variables and deploy the docker image
         id: deploy
+        env:
+          BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
+          DOCKER_IMAGE_TAG: ${{ needs.setup-env.outputs.DOCKER_IMAGE_TAG }}
+          DEPLOYMENT_DOMAIN: ${{ needs.setup-env.outputs.DEPLOYMENT_DOMAIN }}
+          DOCKER_IMAGE_NAME: ${{ needs.setup-env.outputs.DOCKER_IMAGE_NAME }}
+          APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
+          PROJECT_NAME: ${{ needs.setup-env.outputs.PROJECT_NAME }}
         run: |
-          BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
-          IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
+          DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$PROJECT_NAME-postgres-1:5432/$APP_NAME?schema=public
+          REDIS_URL_BUILD=redis://$PROJECT_NAME-redis-1:6379
 
-          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+          docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
 
-          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
-          AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
-          echo "DEPLOY_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
+          docker compose --project-name $PROJECT_NAME pull webapp
 
-          DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
-
-          docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
-
-          if [ "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-webapp-1)" ]; then
-            docker compose --project-name $APP_NAME-$IMAGE_TAG down
-          fi
-
-          DATABASE_URL=${{ secrets.DATABASE_URL}} \
-          REDIS_URL=${{ vars.REDIS_URL }} \
+          DATABASE_URL=$DATABASE_URL \
+          REDIS_URL=$REDIS_URL \
           AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
           TZ=${{ vars.TZ }} GITHUB_ID=${{ vars.GH_ID}} \
           GOOGLE_ID=${{ vars.GOOGLE_ID}} \
@@ -167,8 +199,8 @@ jobs:
           GITHUB_SECRET=${{ secrets.GH_SECRET}} \
           GOOGLE_SECRET=${{ secrets.GOOGLE_SECRET}} \
           GITLAB_SECRET=${{ secrets.GITLAB_SECRET}} \
-          AUTH_URL=$AUTH_URL \
-          NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+          AUTH_URL=$APP_URL/auth \
+          NEXT_PUBLIC_APP_URL=$APP_URL \
           NEXT_PUBLIC_FIREBASE_API_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY}} \
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}} \
           NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID}} \
@@ -177,11 +209,14 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID=${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID}} \
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
-          IMAGE_TAG=$IMAGE_TAG \
           DEPLOYMENT_DOMAIN=$DEPLOYMENT_DOMAIN \
-          docker compose --project-name $APP_NAME-$IMAGE_TAG up -d
+          DOCKER_IMAGE=$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG \
+          BRANCH_NAME=$BRANCH_NAME \
+          docker compose --project-name $PROJECT_NAME up -d --no-deps --force-recreate webapp
 
       - name: Show Deployment Link in Summary
+        env:
+          APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
         run: |
           echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "Deployed to ${{ env.DEPLOY_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed to $APP_URL" >> $GITHUB_STEP_SUMMARY
