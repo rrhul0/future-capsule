@@ -1,0 +1,26 @@
+FROM node:18-alpine AS base
+
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+COPY prisma ./prisma
+
+RUN yarn --frozen-lockfile
+
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+
+COPY . .
+
+RUN yarn build:worker
+
+FROM base AS runner
+WORKDIR /app
+
+COPY --from=builder /app/package.json .
+COPY bull-worker-dist ./bull-worker-dist
+
+CMD ["yarn", "start:worker"]
