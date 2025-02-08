@@ -34,13 +34,13 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-db-postgres-1)" ]; then
+          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-postgres-1)" ]; then
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASS }} \
-            docker compose --project-name $APP_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d postgres
+            docker compose --project-name $APP_NAME-$IMAGE_TAG -f docker-compose.db.yml up -d postgres
           fi
 
-          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-db-redis-1)" ]; then
-            docker compose --project-name $APP_NAME-$IMAGE_TAG-db -f docker-compose.db.yml up -d redis
+          if [ ! "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-redis-1)" ]; then
+            docker compose --project-name $APP_NAME-$IMAGE_TAG -f docker-compose.db.yml up -d redis
           fi
 
           POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-postgres-1)
@@ -79,16 +79,12 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
 
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
           REDIS_URL_BUILD=redis://$REDIS_IP:6379
-
-          echo $POSTGRES_IP
-          echo $REDIS_IP
-          echo $DATABASE_URL_BUILD
-          echo $REDIS_URL_BUILD
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG || true
 
@@ -148,16 +144,18 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          DEPLOYMENT_DOMAIN=$([[ "$BRANCH_NAME" == "main" ]] && echo "future-capsule.clammy.xyz" || echo "${BRANCH_NAME}.tt.clammy.xyz")
+
+          NEXT_PUBLIC_APP_URL=https://$DEPLOYMENT_DOMAIN
+          AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
           echo "DEPLOY_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
 
           DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
 
           docker pull $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
 
-          if [ "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-app-webapp-1)" ]; then
-            docker compose --project-name $APP_NAME-$IMAGE_TAG-app down
+          if [ "$(docker ps -q -f name=$APP_NAME-$IMAGE_TAG-webapp-1)" ]; then
+            docker compose --project-name $APP_NAME-$IMAGE_TAG down
           fi
 
           DATABASE_URL=${{ secrets.DATABASE_URL}} \
@@ -180,7 +178,8 @@ jobs:
           BREVO_USER=${{ secrets.BREVO_USER}} \
           BREVO_PASS=${{ secrets.BREVO_PASS}} \
           IMAGE_TAG=$IMAGE_TAG \
-          docker compose --project-name $APP_NAME-$IMAGE_TAG-app up -d
+          DEPLOYMENT_DOMAIN=$DEPLOYMENT_DOMAIN \
+          docker compose --project-name $APP_NAME-$IMAGE_TAG up -d
 
       - name: Show Deployment Link in Summary
         run: |
