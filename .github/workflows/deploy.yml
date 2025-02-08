@@ -203,8 +203,6 @@ jobs:
 
           docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
 
-          docker compose --project-name $PROJECT_NAME pull webapp
-
           DATABASE_URL=$DATABASE_URL \
           REDIS_URL=$REDIS_URL \
           AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
@@ -242,8 +240,6 @@ jobs:
           REDIS_URL=redis://$PROJECT_NAME-redis-1:6379
 
           docker pull $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG
-
-          docker compose --project-name $PROJECT_NAME pull worker
 
           DATABASE_URL=$DATABASE_URL \
           REDIS_URL=$REDIS_URL \
