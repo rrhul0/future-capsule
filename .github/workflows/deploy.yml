@@ -43,9 +43,9 @@ jobs:
             docker compose --project-name $APP_NAME-$IMAGE_TAG -f docker-compose.db.yml up -d redis
           fi
 
-          POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-postgres-1)
+          POSTGRES_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-postgres-1)
           echo "POSTGRES_IP=$POSTGRES_IP" >> $GITHUB_OUTPUT
-          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-db-redis-1)
+          REDIS_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $APP_NAME-$IMAGE_TAG-redis-1)
           echo "REDIS_IP=$REDIS_IP" >> $GITHUB_OUTPUT
 
   build:
