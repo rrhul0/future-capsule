@@ -112,14 +112,15 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Create docker builder
+        run: docker buildx create --name mybuilder --driver docker-container --use
+
       - name: Build and Push Docker Image
         run: |
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
           REDIS_URL_BUILD=redis://$REDIS_IP:6379
 
           docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG || true
-
-          docker buildx create --name mybuilder --driver docker-container --use
 
           docker buildx build --builder mybuilder --load \
           --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME:cache \
@@ -154,8 +155,6 @@ jobs:
       - name: Build and Push Docker Image Bull Worker
         run: |
           docker pull $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG || true
-
-          docker buildx create --name mybuilder --driver docker-container --use
 
           docker buildx buildx --builder mybuilder --load \
           --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME-worker:cache \
