@@ -23,8 +23,6 @@ services:
       - NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
       - BREVO_USER=${BREVO_USER}
       - BREVO_PASS=${BREVO_PASS}
-    networks:
-      - traefik
     expose:
       - '3000'
     labels:
