@@ -121,12 +121,13 @@ jobs:
 
           docker push $REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG
 
+          echo "### 🚀 Build and Push Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed to ($REGISTRY/$GITHUB_ACTOR/$APP_NAME:$IMAGE_TAG)" >> $GITHUB_STEP_SUMMARY
+
   deploy:
     needs: build
     environment: preview
     concurrency: preview
-    outputs:
-      DEPLOY_URL: ${{ steps.deploy.outputs.DEPLOY_URL }}
     permissions:
       contents: read
       packages: read
@@ -149,7 +150,7 @@ jobs:
 
           AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
           NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
-          echo "DEPLOY_URL=NEXT_PUBLIC_APP_URL" >> $GITHUB_OUTPUT
+          echo "DEPLOY_URL=NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
 
           DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
 
@@ -184,4 +185,4 @@ jobs:
       - name: Show Deployment Link in Summary
         run: |
           echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "[View Deployment]($DEPLOY_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed to (${{ env.DEPLOY_URL }})" >> $GITHUB_STEP_SUMMARY
