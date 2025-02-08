@@ -30,7 +30,7 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.${IMAGE_TAG}.entrypoints=websecure'
-      - 'traefik.http.routers.${IMAGE_TAG}.rule=Host(`${IMAGE_TAG}.tt.clammy.xyz`)'
+      - 'traefik.http.routers.${IMAGE_TAG}.rule=Host(`${NEXT_PUBLIC_APP_URL}`)'
       - 'traefik.http.routers.${IMAGE_TAG}.tls.certresolver=myresolver'
       - 'traefik.http.services.${IMAGE_TAG}.loadbalancer.server.port=3000'
 

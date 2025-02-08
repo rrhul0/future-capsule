@@ -79,7 +79,7 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://future-capsule.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
           AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
 
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
@@ -148,8 +148,8 @@ jobs:
           BRANCH_NAME=$(echo $GITHUB_REF | sed 's/refs\/heads\///')
           IMAGE_TAG=$([[ "$BRANCH_NAME" == "main" ]] && echo "latest" || echo "$BRANCH_NAME")
 
-          AUTH_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz/auth" || echo "https://${BRANCH_NAME}.tt.clammy.xyz/auth")
-          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://prod.tt.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          NEXT_PUBLIC_APP_URL=$([[ "$BRANCH_NAME" == "main" ]] && echo "https://future-capsule.clammy.xyz" || echo "https://${BRANCH_NAME}.tt.clammy.xyz")
+          AUTH_URL=$NEXT_PUBLIC_APP_URL/auth
           echo "DEPLOY_URL=$NEXT_PUBLIC_APP_URL" >> $GITHUB_ENV
 
           DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$APP_NAME-$IMAGE_TAG-db-postgres-1:5432/$APP_NAME?schema=public
