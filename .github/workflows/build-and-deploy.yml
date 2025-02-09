@@ -9,16 +9,12 @@ on:
 env:
   REGISTRY: ghcr.io
   APP_NAME: future-capsule
-
-# concurrency:
-#   group: preview
-#   cancel-in-progress: true
+  # github.ref == 'refs/heads/stagi' && 'release' || 'dev' }}
 
 jobs:
   setup-env:
     runs-on: ubuntu-latest
-    environment: preview
-    concurrency: preview
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     outputs:
       BRANCH_NAME: ${{ steps.envs.outputs.branch_name }}
       DOCKER_IMAGE_TAG: ${{ steps.envs.outputs.docker_image_tag }}
@@ -50,8 +46,7 @@ jobs:
 
   pre-setup:
     runs-on: self-hosted
-    environment: preview
-    concurrency: preview
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     needs: setup-env
     env:
       BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
@@ -85,8 +80,7 @@ jobs:
     needs:
       - setup-env
       - pre-setup
-    environment: preview
-    concurrency: preview
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     permissions:
       contents: read
       packages: write
@@ -185,8 +179,7 @@ jobs:
       - setup-env
       - pre-setup
       - build
-    environment: preview
-    concurrency: preview
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     permissions:
       contents: read
       packages: read
