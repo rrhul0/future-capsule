@@ -42,7 +42,7 @@ echo 'node /app/bundle.js' >> /run_cron.sh && \
 # Ensure the script is executable
 chmod +x /run_cron.sh && \
 # Create the cron job directly in Dockerfile
-echo "* * * * * /run_cron.sh" > /etc/crontabs/root && \
+echo "0 0 * * * /run_cron.sh" > /etc/crontabs/root && \
 # Ensure correct permissions
 chmod 0644 /etc/crontabs/root
 
