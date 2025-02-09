@@ -1,7 +1,8 @@
-import sendEmail from '../src/lib/email'
+import sendEmail from '@/lib/email'
 import { Worker } from 'bullmq'
-import { redisConnection } from '../src/utils/redis'
-import { prisma } from '../prisma/prisma'
+import { redisConnection } from '@/utils/redis'
+import type { ConnectionOptions } from 'bullmq'
+import { prisma } from '@prisma-client'
 
 export type EmailJobData = {
   content: string
@@ -27,7 +28,7 @@ const worker = new Worker<EmailJobData>(
 
     console.log(`Email sent to ${emails.join(', ')}`)
   },
-  { connection: redisConnection }
+  { connection: redisConnection as ConnectionOptions }
 )
 
 // Listen for job completion

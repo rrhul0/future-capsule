@@ -6,8 +6,8 @@
     "dev": "dotenvx run -- concurrently \"next dev\" \"nodemon --exec tsx bull-worker/index.ts\"",
     "dev:cron": "dotenvx run -- tsx cron/index.ts",
     "build": "prisma migrate deploy && next build",
-    "build:worker": "tsc bull-worker/index.ts --outDir bull-worker-dist",
-    "start:worker": "node bull-worker-dist/bull-worker/index.js",
+    "build:worker": "webpack --config worker/webpack.config.js",
+    "start:worker": "node worker/dist/bundle.js",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
@@ -49,8 +49,10 @@
     "postcss-simple-vars": "^7.0.1",
     "prisma": "^6.3.0",
     "tailwindcss": "^3.4.1",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ts-loader": "^9.5.2",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1",
+    "tsconfig-paths-webpack-plugin": "^4.2.0"
   }
 }
