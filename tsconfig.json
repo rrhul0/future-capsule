@@ -22,7 +22,8 @@
       "@/*": ["./src/*"],
       "@app/*": ["./src/app/*"],
       "@prisma-client": ["./prisma/prisma"],
-      "@auth": ["./src/auth"]
+      "@auth": ["./src/auth"],
+      "@worker": ["./worker"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

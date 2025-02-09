@@ -1,7 +1,7 @@
-import { fetchAndScheduleJobs } from '../src/lib/emailQueue'
+import { fetchAndScheduleJobs } from '@/lib/emailQueue'
 
 console.log('Cron job started')
 
-fetchAndScheduleJobs({ days: 1 })
+await fetchAndScheduleJobs({ days: 1 })
 
 console.log('Cron job completed')

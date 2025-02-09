@@ -1,13 +1,9 @@
-import sendEmail from '../src/lib/email'
+import sendEmail from '@/lib/email'
 import { Worker } from 'bullmq'
-import { redisConnection } from '../src/utils/redis'
-import { prisma } from '../prisma/prisma'
-
-export type EmailJobData = {
-  content: string
-  capsuleId: string
-  recipientServiceIds: string[]
-}
+import { redisConnection } from '@/utils/redis'
+import type { ConnectionOptions } from 'bullmq'
+import { prisma } from '@prisma-client'
+import type { EmailJobData } from '@/lib/emailQueue'
 
 // Setup BullMQ worker
 const worker = new Worker<EmailJobData>(
@@ -27,7 +23,7 @@ const worker = new Worker<EmailJobData>(
 
     console.log(`Email sent to ${emails.join(', ')}`)
   },
-  { connection: redisConnection }
+  { connection: redisConnection as ConnectionOptions }
 )
 
 // Listen for job completion

@@ -32,6 +32,24 @@ services:
       - 'traefik.http.routers.${BRANCH_NAME}.tls.certresolver=myresolver'
       - 'traefik.http.services.${BRANCH_NAME}.loadbalancer.server.port=3000'
 
+  worker:
+    image: ${WORKER_IMAGE:-ghcr.io/rrhul0/future-capsule-worker:latest}
+    restart: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - BREVO_USER=${BREVO_USER}
+      - BREVO_PASS=${BREVO_PASS}
+      - TZ=${TZ}
+
+  cron:
+    image: ${CRON_IMAGE:-ghcr.io/rrhul0/future-capsule-cron:latest}
+    restart: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - TZ=${TZ}
+
   redis:
     image: redis:alpine
     restart: always
