@@ -35,11 +35,16 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules/.prisma/client .
 COPY --from=builder /app/cron/dist .
 
+RUN \
+# Create run_cron.sh script
+echo '#!/bin/sh' > /run_cron.sh && \
+echo 'node /app/bundle.js' >> /run_cron.sh && \
+# Ensure the script is executable
+chmod +x /run_cron.sh && \
 # Create the cron job directly in Dockerfile
-RUN echo "* * * * * node /app/bundle.js >> /var/log/cron.log 2>&1" > /etc/crontabs/root
-
+echo "* * * * * /run_cron.sh" > /etc/crontabs/root && \
 # Ensure correct permissions
-RUN chmod 0644 /etc/crontabs/root
+chmod 0644 /etc/crontabs/root
 
 # Start cron in foreground mode
 CMD ["crond", "-f"]
