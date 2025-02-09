@@ -11,8 +11,8 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
-    "build:cron": "tsc cron/index.ts --outDir cron-dist",
-    "start:cron": "node cron-dist/cron/index.js"
+    "build:cron": "webpack --config cron/webpack.config.js",
+    "start:cron": "node cron/dist/bundle.js"
   },
   "dependencies": {
     "@bull-board/hono": "^6.7.1",

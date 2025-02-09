@@ -1,0 +1,50 @@
+FROM node:18-alpine AS base
+
+# installing packages
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# install root project deps
+COPY package.json yarn.lock* ./
+COPY prisma ./prisma
+RUN yarn --frozen-lockfile
+
+
+
+# building with webpack
+FROM base AS builder
+WORKDIR /app
+
+COPY . .
+
+COPY --from=deps /app/node_modules ./node_modules
+
+ENV NODE_ENV=production
+
+RUN yarn build:cron
+
+
+
+# running the app
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+COPY --from=builder /app/node_modules/.prisma/client .
+COPY --from=builder /app/cron/dist .
+
+RUN \
+# Create run_cron.sh script
+echo '#!/bin/sh' > /run_cron.sh && \
+echo 'node /app/bundle.js' >> /run_cron.sh && \
+# Ensure the script is executable
+chmod +x /run_cron.sh && \
+# Create the cron job directly in Dockerfile
+echo "0 0 * * * /run_cron.sh" > /etc/crontabs/root && \
+# Ensure correct permissions
+chmod 0644 /etc/crontabs/root
+
+# Start cron in foreground mode
+CMD ["crond", "-f"]

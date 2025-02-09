@@ -27,5 +27,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "bull-worker"]
+  "exclude": ["node_modules"]
 }
