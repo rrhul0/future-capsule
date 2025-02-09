@@ -3,12 +3,7 @@ import { Worker } from 'bullmq'
 import { redisConnection } from '@/utils/redis'
 import type { ConnectionOptions } from 'bullmq'
 import { prisma } from '@prisma-client'
-
-export type EmailJobData = {
-  content: string
-  capsuleId: string
-  recipientServiceIds: string[]
-}
+import type { EmailJobData } from '@/lib/emailQueue'
 
 // Setup BullMQ worker
 const worker = new Worker<EmailJobData>(
