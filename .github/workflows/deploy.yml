@@ -11,14 +11,14 @@ env:
   APP_NAME: future-capsule
 
 # concurrency:
-#   group: production
+#   group: preview
 #   cancel-in-progress: true
 
 jobs:
   setup-env:
     runs-on: ubuntu-latest
-    environment: production
-    concurrency: production
+    environment: preview
+    concurrency: preview
     outputs:
       BRANCH_NAME: ${{ steps.envs.outputs.branch_name }}
       DOCKER_IMAGE_TAG: ${{ steps.envs.outputs.docker_image_tag }}
@@ -50,8 +50,8 @@ jobs:
 
   pre-setup:
     runs-on: self-hosted
-    environment: production
-    concurrency: production
+    environment: preview
+    concurrency: preview
     needs: setup-env
     env:
       BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
@@ -85,11 +85,19 @@ jobs:
     needs:
       - setup-env
       - pre-setup
-    environment: production
-    concurrency: production
+    environment: preview
+    concurrency: preview
     permissions:
       contents: read
       packages: write
+    env:
+      POSTGRES_IP: ${{needs.pre-setup.outputs.POSTGRES_IP}}
+      REDIS_IP: ${{needs.pre-setup.outputs.REDIS_IP}}
+      BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
+      DOCKER_IMAGE_TAG: ${{ needs.setup-env.outputs.DOCKER_IMAGE_TAG }}
+      DEPLOYMENT_DOMAIN: ${{ needs.setup-env.outputs.DEPLOYMENT_DOMAIN }}
+      DOCKER_IMAGE_NAME: ${{ needs.setup-env.outputs.DOCKER_IMAGE_NAME }}
+      APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -104,22 +112,15 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Create docker builder
+        run: docker buildx create --name mybuilder --driver docker-container --use
+
       - name: Build and Push Docker Image
-        env:
-          POSTGRES_IP: ${{needs.pre-setup.outputs.POSTGRES_IP}}
-          REDIS_IP: ${{needs.pre-setup.outputs.REDIS_IP}}
-          BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
-          DOCKER_IMAGE_TAG: ${{ needs.setup-env.outputs.DOCKER_IMAGE_TAG }}
-          DEPLOYMENT_DOMAIN: ${{ needs.setup-env.outputs.DEPLOYMENT_DOMAIN }}
-          DOCKER_IMAGE_NAME: ${{ needs.setup-env.outputs.DOCKER_IMAGE_NAME }}
-          APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
         run: |
           DATABASE_URL_BUILD=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$POSTGRES_IP:5432/$APP_NAME?schema=public
           REDIS_URL_BUILD=redis://$REDIS_IP:6379
 
           docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG || true
-
-          docker buildx create --name mybuilder --driver docker-container --use
 
           docker buildx build --builder mybuilder --load \
           --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME:cache \
@@ -151,13 +152,29 @@ jobs:
           echo "### 🚀 Build and Push Successful!" >> $GITHUB_STEP_SUMMARY
           echo "Pushed to https://$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
 
+      - name: Build and Push Docker Image Bull Worker
+        run: |
+          docker pull $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG || true
+
+          docker buildx build --builder mybuilder --load \
+          --cache-from=type=registry,ref=$DOCKER_IMAGE_NAME-worker:cache \
+          --cache-to=type=registry,ref=$DOCKER_IMAGE_NAME-worker:cache,mode=max \
+          --build-arg BREVO_USER=${{ secrets.BREVO_USER }} \
+          --build-arg BREVO_PASS=${{ secrets.BREVO_PASS }} \
+          -t $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG --file Dockerfile.worker .
+
+          docker push $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG
+
+          echo "### 🚀 Build and Push worker Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed to https://$DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+
   deploy:
     needs:
       - setup-env
       - pre-setup
       - build
-    environment: production
-    concurrency: production
+    environment: preview
+    concurrency: preview
     permissions:
       contents: read
       packages: read
@@ -173,7 +190,7 @@ jobs:
         run: |
           curl -o docker-compose.yml -L https://raw.githubusercontent.com/$GITHUB_ACTOR/$APP_NAME/$BRANCH_NAME/docker-compose.yml
 
-      - name: Set up environment variables and deploy the docker image
+      - name: Deploy the docker image
         id: deploy
         env:
           BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
@@ -184,11 +201,9 @@ jobs:
           PROJECT_NAME: ${{ needs.setup-env.outputs.PROJECT_NAME }}
         run: |
           DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$PROJECT_NAME-postgres-1:5432/$APP_NAME?schema=public
-          REDIS_URL_BUILD=redis://$PROJECT_NAME-redis-1:6379
+          REDIS_URL=redis://$PROJECT_NAME-redis-1:6379
 
           docker pull $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
-
-          docker compose --project-name $PROJECT_NAME pull webapp
 
           DATABASE_URL=$DATABASE_URL \
           REDIS_URL=$REDIS_URL \
@@ -213,6 +228,28 @@ jobs:
           DOCKER_IMAGE=$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG \
           BRANCH_NAME=$BRANCH_NAME \
           docker compose --project-name $PROJECT_NAME up -d --no-deps --force-recreate webapp
+
+      - name: Deploy worker
+        env:
+          BRANCH_NAME: ${{ needs.setup-env.outputs.BRANCH_NAME }}
+          DOCKER_IMAGE_TAG: ${{ needs.setup-env.outputs.DOCKER_IMAGE_TAG }}
+          DEPLOYMENT_DOMAIN: ${{ needs.setup-env.outputs.DEPLOYMENT_DOMAIN }}
+          DOCKER_IMAGE_NAME: ${{ needs.setup-env.outputs.DOCKER_IMAGE_NAME }}
+          APP_URL: ${{ needs.setup-env.outputs.APP_URL }}
+          PROJECT_NAME: ${{ needs.setup-env.outputs.PROJECT_NAME }}
+        run: |
+          DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASS }}@$PROJECT_NAME-postgres-1:5432/$APP_NAME?schema=public
+          REDIS_URL=redis://$PROJECT_NAME-redis-1:6379
+
+          docker pull $DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG
+
+          DATABASE_URL=$DATABASE_URL \
+          REDIS_URL=$REDIS_URL \
+          TZ=${{ vars.TZ }} \
+          BREVO_USER=${{ secrets.BREVO_USER}} \
+          BREVO_PASS=${{ secrets.BREVO_PASS}} \
+          WORKER_IMAGE=$DOCKER_IMAGE_NAME-worker:$DOCKER_IMAGE_TAG \
+          docker compose --project-name $PROJECT_NAME up -d --no-deps --force-recreate worker
 
       - name: Show Deployment Link in Summary
         env:

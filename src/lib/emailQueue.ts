@@ -1,7 +1,7 @@
-import { redisConnection } from '../utils/redis'
-import { prisma } from '../../prisma/prisma'
+import { redisConnection } from '@/utils/redis'
+import { prisma } from '@prisma-client'
 import { Queue } from 'bullmq'
-import { EmailJobData } from '../../bull-worker'
+import { EmailJobData } from '@worker'
 
 // Setup BullMQ queue
 const emailQueue = new Queue<EmailJobData>('emailQueue', { connection: redisConnection })

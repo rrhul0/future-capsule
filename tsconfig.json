@@ -22,9 +22,10 @@
       "@/*": ["./src/*"],
       "@app/*": ["./src/app/*"],
       "@prisma-client": ["./prisma/prisma"],
-      "@auth": ["./src/auth"]
+      "@auth": ["./src/auth"],
+      "@worker": ["./worker"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "bull-worker"]
 }
